@@ -1,0 +1,40 @@
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  width="300"
+  height="240"
+  viewBox="0 0 300 240"
+  fill="none"
+>
+  <rect width="300" height="240" fill="#F8FAFC" />
+  <rect
+    x="105"
+    y="65"
+    width="90"
+    height="90"
+    rx="8"
+    fill="#E2E8F0"
+  />
+  <path
+    d="M120 135L140 112L158 130L174 114L188 135"
+    stroke="#94A3B8"
+    stroke-width="6"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+  <circle
+    cx="166"
+    cy="91"
+    r="8"
+    fill="#94A3B8"
+  />
+  <text
+    x="150"
+    y="185"
+    text-anchor="middle"
+    font-family="Arial, sans-serif"
+    font-size="14"
+    fill="#64748B"
+  >
+    Loading image
+  </text>
+</svg>

@@ -1,0 +1,141 @@
+.page {
+  min-height: 60vh;
+  padding: 48px 16px;
+  background: #f8fafc;
+}
+
+.container {
+  width: 100%;
+  max-width: 1280px;
+  margin: 0 auto;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 32px;
+  flex-wrap: wrap;
+}
+
+.title {
+  margin: 0;
+  color: #111827;
+  font-size: 32px;
+  font-weight: 700;
+}
+
+.subtitle {
+  margin: 8px 0 0;
+  color: #6b7280;
+  font-size: 15px;
+}
+
+.clearButton {
+  border: 1px solid #ef4444;
+  border-radius: 8px;
+  padding: 10px 18px;
+  background: transparent;
+  color: #ef4444;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease;
+}
+
+.clearButton:hover {
+  background: #ef4444;
+  color: #ffffff;
+}
+
+.productsGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 24px;
+}
+
+.emptyState {
+  min-height: 50vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.emptyContent {
+  max-width: 480px;
+}
+
+.emptyTitle {
+  margin: 0;
+  color: #111827;
+  font-size: 30px;
+  font-weight: 700;
+}
+
+.emptyText {
+  margin: 12px 0 0;
+  color: #6b7280;
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+.browseButton {
+  display: inline-block;
+  margin-top: 24px;
+  border-radius: 8px;
+  padding: 12px 22px;
+  background: #111827;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background-color 0.2s ease;
+}
+
+.browseButton:hover {
+  background: #374151;
+}
+
+@media (max-width: 1024px) {
+  .productsGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .page {
+    padding: 32px 16px;
+  }
+
+  .title {
+    font-size: 28px;
+  }
+
+  .productsGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .clearButton {
+    width: 100%;
+  }
+
+  .productsGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .emptyTitle {
+    font-size: 25px;
+  }
+}

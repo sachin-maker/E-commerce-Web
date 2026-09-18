@@ -1,0 +1,184 @@
+.checkout-page {
+  min-height: 70vh;
+  padding: 40px 0;
+  background: #f8f9fa;
+}
+
+.checkout-container {
+  width: 80%;
+  margin: 0 auto;
+}
+
+.checkout-title {
+  margin-bottom: 30px;
+  font-size: 32px;
+  font-weight: 700;
+}
+
+.checkout-layout {
+  display: grid;
+  grid-template-columns: 1fr 350px;
+  gap: 30px;
+  align-items: start;
+}
+
+.checkout-form-section,
+.checkout-summary {
+  padding: 25px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+}
+
+.checkout-form-section h2,
+.checkout-summary h2 {
+  margin-bottom: 25px;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.checkout-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.form-group label {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.form-group input,
+.form-group textarea {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  outline: none;
+  font: inherit;
+}
+
+.form-group input:focus,
+.form-group textarea:focus {
+  border-color: #2563eb;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
+}
+
+.payment-options {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  margin-bottom: 10px;
+}
+
+.payment-options label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+}
+
+.place-order-btn {
+  padding: 14px 20px;
+  border: none;
+  border-radius: 6px;
+  background: #2563eb;
+  color: #ffffff;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.place-order-btn:hover {
+  background: #1d4ed8;
+}
+
+.checkout-summary {
+  position: sticky;
+  top: 100px;
+}
+
+.checkout-summary-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 15px;
+  margin-bottom: 18px;
+  font-size: 14px;
+}
+
+.checkout-summary-item span {
+  flex: 1;
+}
+
+.summary-row,
+.summary-total {
+  display: flex;
+  justify-content: space-between;
+  gap: 15px;
+  margin-bottom: 18px;
+}
+
+.summary-total {
+  margin-top: 20px;
+  font-size: 20px;
+}
+
+.checkout-empty {
+  width: 80%;
+  margin: 80px auto;
+  text-align: center;
+}
+
+.checkout-empty h1 {
+  margin-bottom: 15px;
+  font-size: 32px;
+}
+
+.checkout-empty p {
+  margin-bottom: 25px;
+  color: #6b7280;
+}
+
+.continue-shopping-btn {
+  display: inline-block;
+  padding: 14px 20px;
+  border-radius: 6px;
+  background: #2563eb;
+  color: #ffffff;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+@media (max-width: 900px) {
+  .checkout-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .checkout-summary {
+    position: static;
+  }
+}
+
+@media (max-width: 600px) {
+  .checkout-container {
+    width: 92%;
+  }
+
+  .checkout-title {
+    font-size: 26px;
+  }
+
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+}
