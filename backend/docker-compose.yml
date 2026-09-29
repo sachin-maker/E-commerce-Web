@@ -1,33 +1,8 @@
 services:
-  elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:8.15.0
-    container_name: shopcart-elasticsearch
-    environment:
-      - discovery.type=single-node
-      - xpack.security.enabled=false
-    ports:
-      - "9200:9200"
-    volumes:
-      - elasticsearch_data:/usr/share/elasticsearch/data
-    healthcheck:
-      test: ["CMD-SHELL", "curl -fs http://localhost:9200 >/dev/null || exit 1"]
-      interval: 10s
-      timeout: 5s
-      retries: 10
-      start_period: 20s
-
   backend:
     build: .
     container_name: shopcart-backend
-    depends_on:
-      elasticsearch:
-        condition: service_healthy
     ports:
       - "5000:5000"
     env_file:
       - .env
-    environment:
-      ELASTICSEARCH_URL: http://elasticsearch:9200
-
-volumes:
-  elasticsearch_data:

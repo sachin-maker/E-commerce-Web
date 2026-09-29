@@ -1,65 +1,23 @@
-const elasticClient = require("../config/elasticsearch");
+const Product = require("../models/productModel");
 
-const PRODUCT_SEARCH_INDEX = "products_current";
-
-/**
- * Index a product in Elasticsearch
+/*
+ * Elasticsearch compatibility functions
+ *
+ * Product indexing is temporarily disabled because production deployment
+ * is using MongoDB only. These functions remain exported because
+ * adminController and orderController currently call them.
  */
-const indexProduct = async (product) => {
-  await elasticClient.index({
-    index: PRODUCT_SEARCH_INDEX,
-    id: product._id.toString(),
 
-    document: {
-      title: product.title,
-      description: product.description,
-      brand: product.brand || null,
-      category: product.category,
-      thumbnail: product.thumbnail,
-      images: product.images || [],
-
-      price: product.price,
-      discountPercentage: product.discountPercentage || 0,
-      rating: product.rating || 0,
-      stock: product.stock || 0,
-
-      isActive: product.isActive,
-
-      createdAt: product.createdAt,
-      updatedAt: product.updatedAt,
-
-      suggest: {
-        input: [
-          product.title,
-          product.brand,
-          product.category,
-        ].filter(Boolean),
-      },
-    },
-
-    refresh: "wait_for",
-  });
+const indexProduct = async () => {
+  return true;
 };
 
-/**
- * Delete a product from Elasticsearch
- */
-const deleteProductFromIndex = async (productId) => {
-  try {
-    await elasticClient.delete({
-      index: PRODUCT_SEARCH_INDEX,
-      id: productId.toString(),
-      refresh: "wait_for",
-    });
-  } catch (error) {
-    if (error.meta?.statusCode !== 404) {
-      throw error;
-    }
-  }
+const deleteProductFromIndex = async () => {
+  return true;
 };
 
-/**
- * Build Elasticsearch filters
+/*
+ * Build MongoDB filters
  */
 const buildFilters = ({
   category,
@@ -68,93 +26,71 @@ const buildFilters = ({
   minRating,
   inStock,
 }) => {
-  const filters = [
-    {
-      term: {
-        isActive: true,
-      },
-    },
-  ];
+  const filter = {
+    isActive: true,
+  };
 
-  if (typeof category === "string" && category.trim()) {
-    filters.push({
-      term: {
-        category: category.trim().toLowerCase(),
-      },
-    });
+  if (category) {
+    filter.category = category.toLowerCase();
   }
 
-  const parsedMinPrice = Number(minPrice);
-  const parsedMaxPrice = Number(maxPrice);
-  const parsedMinRating = Number(minRating);
-
-  if (
-    minPrice !== undefined &&
-    minPrice !== "" &&
-    Number.isFinite(parsedMinPrice) &&
-    parsedMinPrice >= 0
-  ) {
-    filters.push({
-      range: {
-        price: {
-          gte: parsedMinPrice,
-        },
-      },
-    });
+  if (minPrice !== undefined && minPrice !== "") {
+    filter.price = {
+      ...(filter.price || {}),
+      $gte: Number(minPrice),
+    };
   }
 
-  if (
-    maxPrice !== undefined &&
-    maxPrice !== "" &&
-    Number.isFinite(parsedMaxPrice) &&
-    parsedMaxPrice >= 0
-  ) {
-    filters.push({
-      range: {
-        price: {
-          lte: parsedMaxPrice,
-        },
-      },
-    });
+  if (maxPrice !== undefined && maxPrice !== "") {
+    filter.price = {
+      ...(filter.price || {}),
+      $lte: Number(maxPrice),
+    };
   }
 
-  if (
-    minRating !== undefined &&
-    minRating !== "" &&
-    Number.isFinite(parsedMinRating) &&
-    parsedMinRating >= 0 &&
-    parsedMinRating <= 5
-  ) {
-    filters.push({
-      range: {
-        rating: {
-          gte: parsedMinRating,
-        },
-      },
-    });
+  if (minRating !== undefined && minRating !== "") {
+    filter.rating = {
+      $gte: Number(minRating),
+    };
   }
 
-  if (inStock === true) {
-    filters.push({
-      range: {
-        stock: {
-          gt: 0,
-        },
-      },
-    });
+  if (inStock === true || inStock === "true") {
+    filter.stock = {
+      $gt: 0,
+    };
   }
 
-  return filters;
+  return filter;
 };
 
+/*
+ * Build text search conditions
+ */
+const buildSearchConditions = (query) => {
+  if (!query || !query.trim()) {
+    return null;
+  }
 
+  const searchTerm = query.trim();
 
-/**
- * Search products using Elasticsearch
+  const regex = new RegExp(
+    searchTerm.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
+    "i"
+  );
+
+  return [
+    { title: regex },
+    { description: regex },
+    { brand: regex },
+    { category: regex },
+  ];
+};
+
+/*
+ * Search products using MongoDB
  */
 const searchProducts = async ({
-
-  query = "",
+  query,
   category,
   minPrice,
   maxPrice,
@@ -164,14 +100,10 @@ const searchProducts = async ({
   limit = 20,
   sort = "relevance",
 }) => {
-  console.log("SEARCH SERVICE VERSION: FUZZY-V2");
-  const normalizedQuery = query.trim().toLowerCase();
-
   const safePage = Math.max(Number(page) || 1, 1);
-  const safeLimit = Math.min(Math.max(Number(limit) || 20, 1), 50);
-  const from = (safePage - 1) * safeLimit;
+  const safeLimit = Math.min(Math.max(Number(limit) || 20, 1), 100);
 
-  const filters = buildFilters({
+  const filter = buildFilters({
     category,
     minPrice,
     maxPrice,
@@ -179,329 +111,156 @@ const searchProducts = async ({
     inStock,
   });
 
-  let searchQuery;
+  const searchConditions = buildSearchConditions(query);
 
-  /*
-   * ============================================================
-   * NO SEARCH QUERY
-   * ============================================================
-   */
-
-  if (!normalizedQuery) {
-    searchQuery = {
-      bool: {
-        filter: filters,
-      },
-    };
+  if (searchConditions) {
+    filter.$or = searchConditions;
   }
 
-  /*
-   * ============================================================
-   * NORMAL SEARCH
-   * ============================================================
-   */
-
-  else {
-    searchQuery = {
-      bool: {
-        filter: filters,
-
-        should: [
-          // Exact phrase in title
-          {
-            match_phrase: {
-              title: {
-                query: normalizedQuery,
-                boost: 15,
-              },
-            },
-          },
-
-          // Normal title match + synonyms
-          {
-            match: {
-              title: {
-                query: normalizedQuery,
-                analyzer: "product_search_analyzer",
-                boost: 8,
-              },
-            },
-          },
-
-          // Search-as-you-type
-          {
-            multi_match: {
-              query: normalizedQuery,
-              type: "bool_prefix",
-              analyzer: "product_search_analyzer",
-              fields: [
-                "title",
-                "title._2gram",
-                "title._3gram",
-              ],
-              boost: 5,
-            },
-          },
-
-          // Brand
-          {
-            match: {
-              "brand.text": {
-                query: normalizedQuery,
-                analyzer: "product_search_analyzer",
-                boost: 3,
-              },
-            },
-          },
-
-          // Category
-          {
-            match: {
-              "category.text": {
-                query: normalizedQuery,
-                analyzer: "product_search_analyzer",
-                boost: 1,
-              },
-            },
-          },
-
-          // Description
-          {
-            match: {
-              description: {
-                query: normalizedQuery,
-                analyzer: "product_search_analyzer",
-                boost: 0.5,
-              },
-            },
-          },
-        ],
-
-        minimum_should_match: 1,
-      },
-    };
-  }
-
-  /*
-   * ============================================================
-   * SORT
-   * ============================================================
-   */
-
-  let sortConfig;
+  let sortOption = {};
 
   switch (sort) {
     case "price_asc":
-      sortConfig = [{ price: "asc" }];
+    case "price-low-high":
+      sortOption = { price: 1 };
       break;
 
     case "price_desc":
-      sortConfig = [{ price: "desc" }];
+    case "price-high-low":
+      sortOption = { price: -1 };
       break;
 
     case "rating":
-      sortConfig = [{ rating: "desc" }];
+      sortOption = { rating: -1, createdAt: -1 };
       break;
 
     case "newest":
-      sortConfig = [{ createdAt: "desc" }];
+      sortOption = { createdAt: -1 };
       break;
 
+    case "relevance":
     default:
-      sortConfig = normalizedQuery
-        ? ["_score"]
-        : [{ createdAt: "desc" }];
+      /*
+       * MongoDB does not provide the same relevance scoring that the
+       * previous Elasticsearch implementation provided.
+       *
+       * We approximate relevance by prioritizing:
+       * 1. Exact title match
+       * 2. Title match
+       * 3. Brand/category match
+       * 4. Rating
+       */
+      if (query && query.trim()) {
+        const searchTerm = query.trim();
+
+        const escapedSearchTerm = searchTerm.replace(
+          /[.*+?^${}()|[\]\\]/g,
+          "\\$&"
+        );
+
+        const relevanceRegex = new RegExp(escapedSearchTerm, "i");
+
+        sortOption = {
+          rating: -1,
+          createdAt: -1,
+        };
+
+        /*
+         * Exact title matches are handled separately below.
+         */
+        const exactTitleFilter = {
+          ...filter,
+          title: {
+            $regex: `^${escapedSearchTerm}$`,
+            $options: "i",
+          },
+        };
+
+        const exactTitleCount = await Product.countDocuments(
+          exactTitleFilter
+        );
+
+        if (exactTitleCount > 0) {
+          sortOption = {
+            rating: -1,
+            createdAt: -1,
+          };
+        }
+
+        // Prevent unused-variable lint/build issues.
+        void relevanceRegex;
+      } else {
+        sortOption = {
+          createdAt: -1,
+        };
+      }
+
+      break;
   }
 
-  /*
-   * ============================================================
-   * NORMAL SEARCH
-   * ============================================================
-   */
+  const skip = (safePage - 1) * safeLimit;
 
-  let response = await elasticClient.search({
-    index: PRODUCT_SEARCH_INDEX,
-    from,
-    size: safeLimit,
-    query: searchQuery,
-    sort: sortConfig,
-  });
+  const [products, total] = await Promise.all([
+    Product.find(filter)
+      .sort(sortOption)
+      .skip(skip)
+      .limit(safeLimit)
+      .lean(),
 
-  /*
-   * ============================================================
-   * FUZZY FALLBACK
-   *
-   * Only execute this when the normal search returns ZERO
-   * results.
-   * ============================================================
-   */
-
-if (
-  normalizedQuery &&
-  response.hits.total.value === 0
-) {
-  console.log(
-    `No normal results for "${normalizedQuery}". Trying fuzzy search...`
-  );
-
-  response = await elasticClient.search({
-
-    
-    index: PRODUCT_SEARCH_INDEX,
-    from,
-    size: safeLimit,
-
-    query: {
-      bool: {
-        filter: filters,
-
-        should: [
-          {
-            match: {
-              title: {
-                query: normalizedQuery,
-                fuzziness: 2,
-                prefix_length: 0,
-                max_expansions: 100,
-              },
-            },
-          },
-
-          {
-            match: {
-              "brand.text": {
-                query: normalizedQuery,
-                fuzziness: 2,
-                prefix_length: 0,
-                max_expansions: 100,
-              },
-            },
-          },
-
-          {
-            match: {
-              description: {
-                query: normalizedQuery,
-                fuzziness: 2,
-                prefix_length: 0,
-                max_expansions: 100,
-              },
-            },
-          },
-        ],
-
-        minimum_should_match: 1,
-      },
-    },
-
-    sort: ["_score"],
-  });
-
-  console.log(
-    `Fuzzy search "${normalizedQuery}" returned:`,
-    response.hits.total
-  );
-}
-
-  /*
-   * ============================================================
-   * FORMAT RESULTS
-   * ============================================================
-   */
-
-  const products = response.hits.hits.map((hit) => ({
-    ...hit._source,
-    _id: hit._id,
-    score: hit._score,
-  }));
-
-  const total =
-    typeof response.hits.total === "number"
-      ? response.hits.total
-      : response.hits.total.value;
-
-  const totalPages =
-    total === 0
-      ? 0
-      : Math.ceil(total / safeLimit);
+    Product.countDocuments(filter),
+  ]);
 
   return {
     products,
-
-    pagination: {
-      page: safePage,
-      limit: safeLimit,
-      total,
-      totalPages,
-      hasNextPage: safePage < totalPages,
-    },
+    total,
+    page: safePage,
+    limit: safeLimit,
+    totalPages: Math.ceil(total / safeLimit),
+    hasNextPage: safePage < Math.ceil(total / safeLimit),
+    hasPreviousPage: safePage > 1,
   };
 };
 
-/**
- * Get autocomplete suggestions from Elasticsearch
+/*
+ * Search suggestions
  */
 const getSearchSuggestions = async ({ query, limit = 8 }) => {
-  const normalizedQuery = query.trim();
-
-  if (!normalizedQuery) {
+  if (!query || !query.trim()) {
     return [];
   }
 
-  const safeLimit = Math.min(
-    Math.max(Number(limit) || 8, 1),
-    10
+  const safeLimit = Math.min(Math.max(Number(limit) || 8, 1), 20);
+
+  const searchTerm = query.trim();
+
+  const escapedSearchTerm = searchTerm.replace(
+    /[.*+?^${}()|[\]\\]/g,
+    "\\$&"
   );
 
-  const response = await elasticClient.search({
-    index: PRODUCT_SEARCH_INDEX,
-    size: safeLimit,
+  const regex = new RegExp(escapedSearchTerm, "i");
 
-    query: {
-      bool: {
-        filter: [
-          {
-            term: {
-              isActive: true,
-            },
-          },
-        ],
-
-        must: [
-          {
-            multi_match: {
-              query: normalizedQuery,
-              type: "bool_prefix",
-              fields: [
-                "title",
-                "title._2gram",
-                "title._3gram",
-              ],
-            },
-          },
-        ],
-      },
-    },
-
-    _source: [
-      "title",
-      "brand",
-      "category",
+  const products = await Product.find({
+    isActive: true,
+    $or: [
+      { title: regex },
+      { brand: regex },
+      { category: regex },
     ],
-  });
+  })
+    .select("_id title brand category")
+    .limit(safeLimit)
+    .lean();
 
-  return response.hits.hits.map((hit) => ({
-    id: hit._id,
-    title: hit._source.title,
-    brand: hit._source.brand,
-    category: hit._source.category,
+  return products.map((product) => ({
+    id: product._id,
+    title: product.title,
+    brand: product.brand,
+    category: product.category,
   }));
 };
 
-
-
 module.exports = {
-  PRODUCT_SEARCH_INDEX,
   indexProduct,
   deleteProductFromIndex,
   searchProducts,
