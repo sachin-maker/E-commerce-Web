@@ -14,26 +14,50 @@ export default function AdminRoute({
 }: AdminRouteProps) {
   const router = useRouter();
 
-  const { isAuthenticated, user } = useAppSelector(
-    (state) => state.auth
-  );
+  const {
+    isAuthenticated,
+    isInitialized,
+    user,
+  } = useAppSelector((state) => state.auth);
 
   const isAdmin = user?.role === "admin";
 
   useEffect(() => {
+    if (!isInitialized) {
+      return;
+    }
+
     if (!isAuthenticated) {
-      router.replace("/login");
+      const returnPath = `${window.location.pathname}${window.location.search}`;
+
+      router.replace(
+        `/login?next=${encodeURIComponent(returnPath)}`
+      );
+
       return;
     }
 
     if (!isAdmin) {
       router.replace("/");
     }
-  }, [isAuthenticated, isAdmin, router]);
+  }, [
+    isAuthenticated,
+    isAdmin,
+    isInitialized,
+    router,
+  ]);
 
-  if (!isAuthenticated || !isAdmin) {
+  if (
+    !isInitialized ||
+    !isAuthenticated ||
+    !isAdmin
+  ) {
     return (
-      <div className="flex min-h-[300px] items-center justify-center">
+      <div
+        className="flex min-h-[300px] items-center justify-center"
+        role="status"
+        aria-live="polite"
+      >
         <p>Checking permissions...</p>
       </div>
     );

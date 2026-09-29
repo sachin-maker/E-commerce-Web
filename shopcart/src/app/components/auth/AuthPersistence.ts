@@ -1,33 +1,69 @@
 "use client";
 
 import { useEffect } from "react";
-import { useAppDispatch } from "@/app/store/hooks";
-import { setCredentials } from "@/app/store/slices/authSlice";
-import type { User } from "@/services/authService";
+import { useGetProfileQuery } from "@/app/store/api/authApi";
+import { getStoredAccessToken } from "@/lib/authStorage";
+import { useAppDispatch, useAppSelector } from "@/app/store/hooks";
+import {
+  finishInitialization,
+  logout,
+  restoreToken,
+  setCredentials,
+} from "@/app/store/slices/authSlice";
 
 export default function AuthPersistence() {
   const dispatch = useAppDispatch();
 
+  const token = useAppSelector((state) => state.auth.token);
+  const isInitialized = useAppSelector(
+    (state) => state.auth.isInitialized
+  );
+
+  const {
+    data,
+    isError,
+    isFetching,
+  } = useGetProfileQuery(undefined, {
+    skip: !token || isInitialized,
+  });
+
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    const userString = localStorage.getItem("user");
+    const storedToken = getStoredAccessToken();
 
-    if (!token || !userString) return;
+    if (storedToken) {
+      dispatch(restoreToken(storedToken));
+    } else {
+      dispatch(finishInitialization());
+    }
+  }, [dispatch]);
 
-    try {
-      const user = JSON.parse(userString) as User;
+  useEffect(() => {
+    if (!token || isInitialized || isFetching) {
+      return;
+    }
 
+    if (data) {
       dispatch(
         setCredentials({
           token,
-          user,
+          user: data.user,
         })
       );
-    } catch {
-      localStorage.removeItem("token");
-      localStorage.removeItem("user");
+
+      return;
     }
-  }, [dispatch]);
+
+    if (isError) {
+      dispatch(logout());
+    }
+  }, [
+    data,
+    dispatch,
+    isError,
+    isFetching,
+    isInitialized,
+    token,
+  ]);
 
   return null;
 }

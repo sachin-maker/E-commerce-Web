@@ -1,15 +1,18 @@
 
 "use client";
 
-import { useSelector } from "react-redux";
-
-import type { RootState } from "@/app/store/index";
 import type { Product } from "@/app/types/product";
+
+import {
+  useAppSelector,
+} from "@/app/store/hooks";
 
 import ProductCard from "@/app/components/home/ProductCard";
 import ProductSkeleton from "@/app/components/products/ProductSkeleton";
 
-import { useGetProductsByCategoryQuery } from "@/app/store/api/dummyJsonApi";
+import {
+  useGetProductsByCategoryQuery,
+} from "@/app/store/api/productApi";
 
 interface RecommendedProductsProps {
   product: Product;
@@ -18,13 +21,16 @@ interface RecommendedProductsProps {
 export default function RecommendedProducts({
   product,
 }: RecommendedProductsProps) {
-  const recentlyViewedProducts = useSelector(
-    (state: RootState) =>
-      state.recentlyViewed.products
-  );
+  const recentlyViewedProducts =
+    useAppSelector(
+      (state) =>
+        state.recentlyViewed.products
+    );
 
-  // Find a category from recently viewed products
-  // that is different from the current product category.
+  /*
+   * Find the first recently viewed product
+   * from a different category.
+   */
   const recommendedCategory =
     recentlyViewedProducts.find(
       (item) =>
@@ -32,47 +38,78 @@ export default function RecommendedProducts({
         item.category !== product.category
     )?.category ?? null;
 
-  const { data, isLoading } =
-    useGetProductsByCategoryQuery(
-      {
-        category: recommendedCategory ?? "",
-        limit: 5,
-        skip: 0,
-      },
-      {
-        skip: !recommendedCategory,
-      }
-    );
+  const {
+    data,
+    isLoading,
+    isError,
+    refetch,
+  } = useGetProductsByCategoryQuery(
+    {
+      category: recommendedCategory ?? "",
+      limit: 5,
+      skip: 0,
+    },
+    {
+      skip: !recommendedCategory,
+    }
+  );
+
+  /*
+   * Create a Set once so we don't repeatedly
+   * scan recently viewed products for every
+   * recommended product.
+   */
+  const recentlyViewedIds = new Set(
+    recentlyViewedProducts.map(
+      (item) => item._id
+    )
+  );
 
   const recommendedProducts =
     data?.products
       .filter(
         (recommendedProduct) =>
           recommendedProduct._id !== product._id &&
-          !recentlyViewedProducts.some(
-            (item) =>
-              item._id === recommendedProduct._id
+          !recentlyViewedIds.has(
+            recommendedProduct._id
           )
       )
       .slice(0, 4) ?? [];
 
-  // If there is not enough browsing history,
-  // don't show the recommendation section.
+  /*
+   * Don't render recommendations when there
+   * isn't enough browsing context.
+   */
+  if (!recommendedCategory) {
+    return null;
+  }
+
+  /*
+   * If the request completed successfully but
+   * there are no recommendations, hide the section.
+   */
   if (
-    !recommendedCategory ||
-    (!isLoading && recommendedProducts.length === 0)
+    !isLoading &&
+    !isError &&
+    recommendedProducts.length === 0
   ) {
     return null;
   }
 
   return (
-    <section className="recommended-products-section">
+    <section
+      className="recommended-products-section"
+      aria-labelledby="recommended-products-title"
+    >
       <div className="recommended-products-header">
         <span className="section-eyebrow">
           Based on your activity
         </span>
 
-        <h2 className="recommended-products-title">
+        <h2
+          id="recommended-products-title"
+          className="recommended-products-title"
+        >
           Recommended for You
         </h2>
 
@@ -82,12 +119,32 @@ export default function RecommendedProducts({
       </div>
 
       {isLoading ? (
-        <div className="products-grid">
+        <div
+          className="products-grid"
+          aria-busy="true"
+          aria-label="Loading recommended products"
+        >
           {Array.from({ length: 4 }).map(
             (_, index) => (
-              <ProductSkeleton key={index} />
+              <ProductSkeleton
+                key={`recommended-skeleton-${index}`}
+              />
             )
           )}
+        </div>
+      ) : isError ? (
+        <div className="product-section-message">
+          <p>
+            Unable to load recommended products.
+          </p>
+
+          <button
+            type="button"
+            className="retry-button"
+            onClick={() => refetch()}
+          >
+            Try Again
+          </button>
         </div>
       ) : (
         <div className="products-grid">
@@ -104,3 +161,5 @@ export default function RecommendedProducts({
     </section>
   );
 }
+
+

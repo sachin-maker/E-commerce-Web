@@ -3,8 +3,11 @@ const jwt = require("jsonwebtoken");
 
 const User = require("../models/userModel");
 
-// Generate JWT token
 const generateToken = (userId) => {
+  if (!process.env.JWT_SECRET) {
+    throw new Error("JWT_SECRET is not configured");
+  }
+
   return jwt.sign(
     {
       userId: userId.toString(),
@@ -16,19 +19,44 @@ const generateToken = (userId) => {
   );
 };
 
-// Register user
 const registerUser = async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    const { name, email, password } = req.body || {};
 
-    if (!name || !email || !password) {
+    if (
+      typeof name !== "string" ||
+      typeof email !== "string" ||
+      typeof password !== "string"
+    ) {
       return res.status(400).json({
         success: false,
         message: "Name, email and password are required",
       });
     }
 
-    const normalizedEmail = email.toLowerCase().trim();
+    const normalizedName = name.trim();
+    const normalizedEmail = email.trim().toLowerCase();
+
+    if (!normalizedName || !normalizedEmail || !password) {
+      return res.status(400).json({
+        success: false,
+        message: "Name, email and password are required",
+      });
+    }
+
+    if (normalizedName.length < 2 || normalizedName.length > 50) {
+      return res.status(400).json({
+        success: false,
+        message: "Name must contain between 2 and 50 characters",
+      });
+    }
+
+    if (password.length < 6) {
+      return res.status(400).json({
+        success: false,
+        message: "Password must contain at least 6 characters",
+      });
+    }
 
     const existingUser = await User.findOne({
       email: normalizedEmail,
@@ -44,7 +72,7 @@ const registerUser = async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const user = await User.create({
-      name: name.trim(),
+      name: normalizedName,
       email: normalizedEmail,
       password: hashedPassword,
     });
@@ -63,27 +91,44 @@ const registerUser = async (req, res) => {
       },
     });
   } catch (error) {
+    console.error("Registration error:", error);
+
+    if (error?.code === 11000) {
+      return res.status(409).json({
+        success: false,
+        message: "User already exists with this email",
+      });
+    }
+
     return res.status(500).json({
       success: false,
       message: "Registration failed",
-      error: error.message,
     });
   }
 };
 
-// Login user
 const loginUser = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email, password } = req.body || {};
 
-    if (!email || !password) {
+    if (
+      typeof email !== "string" ||
+      typeof password !== "string"
+    ) {
       return res.status(400).json({
         success: false,
         message: "Email and password are required",
       });
     }
 
-    const normalizedEmail = email.toLowerCase().trim();
+    const normalizedEmail = email.trim().toLowerCase();
+
+    if (!normalizedEmail || !password) {
+      return res.status(400).json({
+        success: false,
+        message: "Email and password are required",
+      });
+    }
 
     const user = await User.findOne({
       email: normalizedEmail,
@@ -122,10 +167,11 @@ const loginUser = async (req, res) => {
       },
     });
   } catch (error) {
+    console.error("Login error:", error);
+
     return res.status(500).json({
       success: false,
       message: "Login failed",
-      error: error.message,
     });
   }
 };

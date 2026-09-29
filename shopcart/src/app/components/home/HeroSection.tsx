@@ -5,22 +5,29 @@ import "./HeroSection.css";
 
 export default function HeroSection() {
   return (
-    <section className="hero-section">
+    <section
+      className="hero-section"
+      aria-labelledby="hero-title"
+    >
       <div className="home-container hero-container">
         <div className="hero-content">
           <span className="hero-eyebrow">
             ✨ Discover your next favorite
           </span>
 
-          <h1 className="hero-title">
+          <h1
+            id="hero-title"
+            className="hero-title"
+          >
             Shop smarter.
             <br />
             <span>Live better.</span>
           </h1>
 
           <p className="hero-description">
-            Discover amazing products, unbeatable deals,
-            and everything you need — all in one place.
+            Discover quality products, great deals,
+            and everyday essentials at ShopCart —
+            all in one convenient online store.
           </p>
 
           <div className="hero-buttons">
@@ -29,18 +36,21 @@ export default function HeroSection() {
               className="hero-primary-button"
             >
               Shop Now
-              <span>→</span>
+              <span aria-hidden="true">→</span>
             </Link>
 
             <Link
-              href="/products?sort=featured"
+              href="/products"
               className="hero-secondary-button"
             >
               Explore Collection
             </Link>
           </div>
 
-          <div className="hero-trust">
+          <div
+            className="hero-trust"
+            aria-label="ShopCart highlights"
+          >
             <div className="hero-trust-item">
               <strong>10K+</strong>
               <span>Products</span>
@@ -58,16 +68,21 @@ export default function HeroSection() {
           </div>
         </div>
 
-        <div className="hero-visual">
+        <div
+          className="hero-visual"
+          aria-hidden="true"
+        >
           <div className="hero-circle hero-circle-one" />
           <div className="hero-circle hero-circle-two" />
 
           <div className="hero-shopping-bag">
             <span className="hero-bag-handle" />
+
             <div className="hero-bag-body">
               <span className="hero-bag-logo">
                 S
               </span>
+
               <span className="hero-bag-text">
                 ShopCart
               </span>
@@ -75,18 +90,28 @@ export default function HeroSection() {
           </div>
 
           <div className="hero-floating-card hero-card-top">
-            <span className="hero-floating-icon">🛍️</span>
+            <span className="hero-floating-icon">
+              🛍️
+            </span>
+
             <div>
               <strong>New Arrivals</strong>
-              <small>Explore latest trends</small>
+              <small>
+                Explore latest trends
+              </small>
             </div>
           </div>
 
           <div className="hero-floating-card hero-card-bottom">
-            <span className="hero-floating-icon">🎉</span>
+            <span className="hero-floating-icon">
+              🎉
+            </span>
+
             <div>
               <strong>Special Offers</strong>
-              <small>Save more, shop more</small>
+              <small>
+                Save more, shop more
+              </small>
             </div>
           </div>
         </div>
@@ -94,3 +119,5 @@ export default function HeroSection() {
     </section>
   );
 }
+
+

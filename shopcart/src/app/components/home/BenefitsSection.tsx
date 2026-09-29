@@ -1,4 +1,3 @@
-
 import {
   Headphones,
   LockKeyhole,
@@ -33,8 +32,18 @@ const benefits = [
 
 export default function BenefitsSection() {
   return (
-    <section className="benefits-section">
+    <section
+      className="benefits-section"
+      aria-labelledby="benefits-title"
+    >
       <div className="home-container">
+        <h2
+          id="benefits-title"
+          className="sr-only"
+        >
+          Shopping Benefits
+        </h2>
+
         <div className="benefits-grid">
           {benefits.map((benefit) => {
             const Icon = benefit.icon;
@@ -44,7 +53,10 @@ export default function BenefitsSection() {
                 key={benefit.title}
                 className="benefit-item"
               >
-                <div className="benefit-icon">
+                <div
+                  className="benefit-icon"
+                  aria-hidden="true"
+                >
                   <Icon size={24} />
                 </div>
 

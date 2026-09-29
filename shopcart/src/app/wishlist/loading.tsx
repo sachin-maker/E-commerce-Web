@@ -1,27 +1,72 @@
-"use client"
+"use client";
+
+import styles from "./Wishlist.module.css";
 
 const WishlistLoading = () => {
   return (
-    <main className="min-h-[60vh] px-4 py-12">
-      <div className="mx-auto max-w-7xl">
-        <div className="mb-8 h-10 w-56 animate-pulse rounded bg-gray-200" />
+    <main
+      className={styles.page}
+      aria-labelledby="wishlist-loading-title"
+    >
+      <div className={styles.container}>
+        <header className={styles.loadingHeader}>
+          <div
+            className={styles.loadingTitle}
+            aria-hidden="true"
+          />
 
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          <div
+            className={styles.loadingSubtitle}
+            aria-hidden="true"
+          />
+        </header>
+
+        <h1
+          id="wishlist-loading-title"
+          className={styles.visuallyHidden}
+        >
+          Loading wishlist
+        </h1>
+
+        <div
+          className={styles.productsGrid}
+          aria-hidden="true"
+        >
           {Array.from({ length: 4 }).map((_, index) => (
             <div
               key={index}
-              className="overflow-hidden rounded-lg border bg-white"
+              className={styles.skeletonCard}
             >
-              <div className="h-56 animate-pulse bg-gray-200" />
+              <div
+                className={styles.skeletonImage}
+              />
 
-              <div className="space-y-3 p-4">
-                <div className="h-5 animate-pulse rounded bg-gray-200" />
-                <div className="h-4 w-2/3 animate-pulse rounded bg-gray-200" />
-                <div className="h-10 animate-pulse rounded bg-gray-200" />
+              <div className={styles.skeletonContent}>
+                <div
+                  className={
+                    styles.skeletonTitle
+                  }
+                />
+
+                <div
+                  className={
+                    styles.skeletonText
+                  }
+                />
+
+                <div
+                  className={
+                    styles.skeletonButton
+                  }
+                />
               </div>
             </div>
           ))}
         </div>
+
+        <p className={styles.visuallyHidden}>
+          Loading wishlist products...
+        </p>
       </div>
     </main>
   );

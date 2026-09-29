@@ -2,12 +2,53 @@
 
 import { useEffect, useState } from "react";
 import { useAppDispatch, useAppSelector } from "@/app/store/hooks";
-import {
-  Product,
-} from "@/app/types/product";
+import type { Product } from "@/app/types/product";
 import { setWishlistItems } from "@/app/store/slices/wishlistSlice";
+import { isValidProduct } from "@/app/utils/productValidation";
 
 const WISHLIST_STORAGE_KEY = "shopcart-wishlist";
+const WISHLIST_STORAGE_VERSION = 1;
+
+interface StoredWishlist {
+  version: number;
+  items: Product[];
+}
+
+
+
+const parseStoredWishlist = (storedValue: string): Product[] => {
+  try {
+    const parsed: unknown = JSON.parse(storedValue);
+
+    // Current versioned format
+    if (
+      typeof parsed === "object" &&
+      parsed !== null &&
+      "version" in parsed &&
+      "items" in parsed
+    ) {
+      const stored = parsed as StoredWishlist;
+
+      if (
+        stored.version === WISHLIST_STORAGE_VERSION &&
+        Array.isArray(stored.items)
+      ) {
+        return stored.items.filter(isValidProduct);
+      }
+
+      return [];
+    }
+
+    // Backward compatibility with the previous raw array format
+    if (Array.isArray(parsed)) {
+      return parsed.filter(isValidProduct);
+    }
+
+    return [];
+  } catch {
+    return [];
+  }
+};
 
 export default function WishlistPersistence() {
   const dispatch = useAppDispatch();
@@ -18,45 +59,39 @@ export default function WishlistPersistence() {
 
   const [isHydrated, setIsHydrated] = useState(false);
 
-  // Load wishlist from localStorage
   useEffect(() => {
-    try {
-      const storedWishlist = localStorage.getItem(
-        WISHLIST_STORAGE_KEY
-      );
+    const storedWishlist = localStorage.getItem(
+      WISHLIST_STORAGE_KEY
+    );
 
-      if (storedWishlist) {
-        const parsedWishlist: Product[] =
-          JSON.parse(storedWishlist);
+    if (storedWishlist) {
+      const parsedWishlist = parseStoredWishlist(storedWishlist);
 
-        if (Array.isArray(parsedWishlist)) {
-          dispatch(setWishlistItems(parsedWishlist));
-        }
+      if (parsedWishlist.length > 0) {
+        dispatch(setWishlistItems(parsedWishlist));
       }
-    } catch (error) {
-      console.error(
-        "Error loading wishlist from localStorage:",
-        error
-      );
-    } finally {
-      setIsHydrated(true);
     }
+
+    setIsHydrated(true);
   }, [dispatch]);
 
-  // Save wishlist to localStorage
   useEffect(() => {
-    if (!isHydrated) return;
+    if (!isHydrated) {
+      return;
+    }
+
+    const dataToStore: StoredWishlist = {
+      version: WISHLIST_STORAGE_VERSION,
+      items: wishlistItems,
+    };
 
     try {
       localStorage.setItem(
         WISHLIST_STORAGE_KEY,
-        JSON.stringify(wishlistItems)
+        JSON.stringify(dataToStore)
       );
-    } catch (error) {
-      console.error(
-        "Error saving wishlist to localStorage:",
-        error
-      );
+    } catch {
+      // Ignore localStorage failures such as quota/private-mode restrictions.
     }
   }, [wishlistItems, isHydrated]);
 

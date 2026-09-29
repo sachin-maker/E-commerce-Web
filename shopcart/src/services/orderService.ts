@@ -1,13 +1,13 @@
+
 import { apiRequest } from "@/lib/api";
 
 export interface ShippingAddress {
   fullName: string;
   phone: string;
-  address: string;
+  addressLine: string;
   city: string;
   state: string;
   postalCode: string;
-  country: string;
 }
 
 export interface OrderItem {
@@ -18,19 +18,32 @@ export interface OrderItem {
   thumbnail?: string;
 }
 
+export type PaymentMethod = "COD" | "ONLINE";
+
+export type PaymentStatus = "PENDING" | "PAID" | "FAILED";
+
+export type OrderStatus =
+  | "PLACED"
+  | "CONFIRMED"
+  | "SHIPPED"
+  | "DELIVERED"
+  | "CANCELLED";
+
+export interface OrderUser {
+  _id: string;
+  name: string;
+  email: string;
+  role?: "user" | "admin";
+}
+
 export interface Order {
   _id: string;
-  user: string;
+  user: string | OrderUser;
   items: OrderItem[];
   shippingAddress: ShippingAddress;
-  paymentMethod: "COD" | "ONLINE";
-  paymentStatus: "pending" | "paid" | "failed";
-  status:
-    | "placed"
-    | "processing"
-    | "shipped"
-    | "delivered"
-    | "cancelled";
+  paymentMethod: PaymentMethod;
+  paymentStatus: PaymentStatus;
+  orderStatus: OrderStatus;
   totalAmount: number;
   createdAt?: string;
   updatedAt?: string;
@@ -38,7 +51,7 @@ export interface Order {
 
 export interface CreateOrderData {
   shippingAddress: ShippingAddress;
-  paymentMethod: "COD" | "ONLINE";
+  paymentMethod: PaymentMethod;
 }
 
 export interface OrderResponse {
@@ -46,10 +59,18 @@ export interface OrderResponse {
   message?: string;
   order: Order;
 }
+export interface OrdersPagination {
+  currentPage: number;
+  limit: number;
+  totalOrders: number;
+  totalPages: number;
+}
 
 export interface OrdersResponse {
   success: boolean;
+  count?: number;
   orders: Order[];
+  pagination: OrdersPagination;
 }
 
 export const createOrder = async (
@@ -60,20 +81,31 @@ export const createOrder = async (
     method: "POST",
     headers: {
       Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
     },
     body: JSON.stringify(orderData),
   });
 };
 
 export const getOrders = async (
-  token: string
+  token: string,
+  page = 1,
+  limit = 10
 ): Promise<OrdersResponse> => {
-  return apiRequest<OrdersResponse>("/orders", {
-    method: "GET",
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
+  const params = new URLSearchParams({
+    page: String(page),
+    limit: String(limit),
   });
+
+  return apiRequest<OrdersResponse>(
+    `/orders?${params.toString()}`,
+    {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
 };
 
 export const getOrderById = async (
@@ -87,3 +119,21 @@ export const getOrderById = async (
     },
   });
 };
+
+
+
+export const cancelOrder = async (
+  token: string,
+  orderId: string
+): Promise<OrderResponse> => {
+  return apiRequest<OrderResponse>(`/orders/${orderId}/cancel`, {
+    method: "PATCH",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+  });
+};
+
+
+

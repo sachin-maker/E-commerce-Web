@@ -1,13 +1,16 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
-import { Product } from "@/app/types/product";
+import type { Product } from "@/app/types/product";
+import { isValidProduct } from "@/app/utils/productValidation";
 
-interface WishlistState {
+export interface WishlistState {
   items: Product[];
 }
 
 const initialState: WishlistState = {
   items: [],
 };
+
+
 
 const wishlistSlice = createSlice({
   name: "wishlist",
@@ -16,6 +19,10 @@ const wishlistSlice = createSlice({
   reducers: {
     addToWishlist: (state, action: PayloadAction<Product>) => {
       const product = action.payload;
+
+      if (!isValidProduct(product)) {
+        return;
+      }
 
       const alreadyExists = state.items.some(
         (item) => item._id === product._id
@@ -26,7 +33,7 @@ const wishlistSlice = createSlice({
       }
     },
 
-    removeFromWishlist: (state, action: PayloadAction<number>) => {
+    removeFromWishlist: (state, action: PayloadAction<string>) => {
       state.items = state.items.filter(
         (item) => item._id !== action.payload
       );
@@ -36,8 +43,11 @@ const wishlistSlice = createSlice({
       state.items = [];
     },
 
-    setWishlistItems: (state, action: PayloadAction<Product[]>) => {
-      state.items = action.payload;
+    setWishlistItems: (
+      state,
+      action: PayloadAction<Product[]>
+    ) => {
+      state.items = action.payload.filter(isValidProduct);
     },
   },
 });

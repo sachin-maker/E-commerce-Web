@@ -1,7 +1,15 @@
+
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
+import {
+  usePathname,
+  useRouter,
+  useSearchParams,
+} from "next/navigation";
+
 import useDebounce from "@/app/hooks/useDebounce";
+
 import {
   AlertCircle,
   PackageSearch,
@@ -11,8 +19,7 @@ import {
 import {
   useGetCategoriesQuery,
   useGetProductsQuery,
-  useSearchProductsQuery,
-} from "@/app/store/api/dummyJsonApi";
+} from "@/app/store/api/productApi";
 
 import ProductFilters from "./ProductFilters";
 import ProductGrid from "./ProductGrid";
@@ -28,39 +35,125 @@ type SortOption =
   | "name-asc"
   | "name-desc";
 
+const VALID_SORT_OPTIONS: SortOption[] = [
+  "default",
+  "price-low",
+  "price-high",
+  "rating-high",
+  "name-asc",
+  "name-desc",
+];
+
+const isValidSortOption = (
+  value: string
+): value is SortOption => {
+  return VALID_SORT_OPTIONS.includes(
+    value as SortOption
+  );
+};
+
+const parsePrice = (
+  value: string | null
+): number | null => {
+  if (value === null || value.trim() === "") {
+    return null;
+  }
+
+  const parsed = Number(value);
+
+  if (
+    !Number.isFinite(parsed) ||
+    parsed < 0
+  ) {
+    return null;
+  }
+
+  return parsed;
+};
+
+const parsePage = (
+  value: string | null
+): number => {
+  if (value === null || value.trim() === "") {
+    return 1;
+  }
+
+  const parsed = Number(value);
+
+  if (
+    !Number.isInteger(parsed) ||
+    parsed < 1
+  ) {
+    return 1;
+  }
+
+  return parsed;
+};
+
 export default function ProductsPageClient() {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [selectedCategory, setSelectedCategory] =
-    useState("all");
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
 
-  const [sortBy, setSortBy] =
-    useState<SortOption>("default");
+  /*
+   * Read the current URL state.
+   *
+   * URL is the source of truth for:
+   * - search
+   * - category
+   * - sorting
+   * - price range
+   * - pagination
+   */
+  const urlSearchTerm =
+    searchParams.get("search") ?? "";
 
-  const [minPrice, setMinPrice] =
-    useState<number | null>(null);
+  const urlCategory =
+    searchParams.get("category") ?? "";
 
-  const [maxPrice, setMaxPrice] =
-    useState<number | null>(null);
+  const urlSort = searchParams.get("sort");
 
-  const [currentPage, setCurrentPage] = useState(1);
-
-  const debouncedSearchTerm = useDebounce(
-    searchTerm,
-    400
+  const urlMinPrice = parsePrice(
+    searchParams.get("minPrice")
   );
 
-  const skip =
-    (currentPage - 1) * PRODUCTS_PER_PAGE;
+  const urlMaxPrice = parsePrice(
+    searchParams.get("maxPrice")
+  );
 
-  const isSearching =
-    debouncedSearchTerm.trim().length > 0;
+  const currentPage = parsePage(
+    searchParams.get("page")
+  );
+
+  const selectedSort: SortOption =
+    urlSort && isValidSortOption(urlSort)
+      ? urlSort
+      : "default";
+
+  const selectedCategory =
+    urlCategory.trim() || "all";
+
+  const [searchTerm, setSearchTerm] =
+    useState(urlSearchTerm);
+
+  const [minPrice, setMinPrice] =
+    useState<number | null>(urlMinPrice);
+
+  const [maxPrice, setMaxPrice] =
+    useState<number | null>(urlMaxPrice);
+
+  const [sortBy, setSortBy] =
+    useState<SortOption>(selectedSort);
+
+  const debouncedSearchTerm =
+    useDebounce(searchTerm, 400);
+
+  const normalizedSearchTerm =
+    debouncedSearchTerm.trim();
 
   const isSearchPending =
     searchTerm.trim() !==
-    debouncedSearchTerm.trim();
-
-  const isCategorySelected =
-    selectedCategory !== "all";
+    normalizedSearchTerm;
 
   const isPriceRangeValid =
     (minPrice === null || minPrice >= 0) &&
@@ -70,7 +163,25 @@ export default function ProductsPageClient() {
       minPrice <= maxPrice);
 
   /*
-   * Fetch categories
+   * Keep local search/filter state synchronized
+   * when the URL changes through browser
+   * navigation, back/forward, or another
+   * component.
+   */
+  useEffect(() => {
+    setSearchTerm(urlSearchTerm);
+    setMinPrice(urlMinPrice);
+    setMaxPrice(urlMaxPrice);
+    setSortBy(selectedSort);
+  }, [
+    urlSearchTerm,
+    urlMinPrice,
+    urlMaxPrice,
+    selectedSort,
+  ]);
+
+  /*
+   * Fetch categories.
    */
   const {
     data: categories = [],
@@ -78,168 +189,112 @@ export default function ProductsPageClient() {
   } = useGetCategoriesQuery();
 
   /*
-   * Fetch all products or products by category.
+   * Fetch products.
    *
-   * When selectedCategory is "all":
-   * /products?limit=12&skip=0
-   *
-   * When selectedCategory is "electronics":
-   * /products?limit=12&skip=0&category=electronics
+   * The backend remains responsible for:
+   * - filtering
+   * - sorting
+   * - search relevance
+   * - pagination
    */
-  const productsQuery = useGetProductsQuery({
-    limit: PRODUCTS_PER_PAGE,
-    skip,
-    category:
-      selectedCategory === "all"
-        ? ""
-        : selectedCategory,
-  });
-
-  /*
-   * Fetch searched products.
-   */
-  const searchQuery = useSearchProductsQuery(
-    {
-      query: debouncedSearchTerm.trim(),
-      limit: PRODUCTS_PER_PAGE,
-      skip,
-    },
-    {
-      skip: !isSearching,
-    }
-  );
-
-  /*
-   * Use search results when searching.
-   * Otherwise use all/category products.
-   */
-  const activeQuery = isSearching
-    ? searchQuery
-    : productsQuery;
-
   const {
     data,
     isLoading,
     isFetching,
     isError,
     refetch,
-  } = activeQuery;
+  } = useGetProductsQuery(
+    {
+      limit: PRODUCTS_PER_PAGE,
 
-  const products = useMemo(
-    () => data?.products ?? [],
-    [data?.products]
+      skip:
+        (currentPage - 1) *
+        PRODUCTS_PER_PAGE,
+
+      search: normalizedSearchTerm,
+
+      category:
+        selectedCategory === "all"
+          ? ""
+          : selectedCategory,
+
+      minPrice,
+      maxPrice,
+
+      sort:
+        normalizedSearchTerm &&
+        sortBy === "default"
+          ? "relevance"
+          : sortBy,
+    },
+    {
+      skip: !isPriceRangeValid,
+    }
   );
 
   /*
-   * Apply price filtering on the frontend.
+   * Create a new URL while preserving
+   * unrelated query parameters.
    */
-  const priceFilteredProducts = useMemo(() => {
-    if (!isPriceRangeValid) {
-      return [];
-    }
+  const updateUrl = (
+    updates: Record<
+      string,
+      string | number | null | undefined
+    >
+  ) => {
+    const params = new URLSearchParams(
+      searchParams.toString()
+    );
 
-    return products.filter((product) => {
-      const price = product.price;
+    Object.entries(updates).forEach(
+      ([key, value]) => {
+        if (
+          value === null ||
+          value === undefined ||
+          value === ""
+        ) {
+          params.delete(key);
+        } else {
+          params.set(key, String(value));
+        }
+      }
+    );
 
-      const matchesMinPrice =
-        minPrice === null ||
-        price >= minPrice;
+    const queryString = params.toString();
 
-      const matchesMaxPrice =
-        maxPrice === null ||
-        price <= maxPrice;
-
-      return (
-        matchesMinPrice &&
-        matchesMaxPrice
-      );
-    });
-  }, [
-    products,
-    minPrice,
-    maxPrice,
-    isPriceRangeValid,
-  ]);
-
-  /*
-   * Total products comes from the backend response.
-   */
-  const totalProducts =
-    data?.total ??
-    data?.products?.length ??
-    0;
-
-  const totalPages = Math.ceil(
-    totalProducts / PRODUCTS_PER_PAGE
-  );
-
-  /*
-   * Apply sorting on the frontend.
-   */
-  const sortedProducts = useMemo(() => {
-    const productsCopy = [
-      ...priceFilteredProducts,
-    ];
-
-    switch (sortBy) {
-      case "price-low":
-        return productsCopy.sort(
-          (a, b) => a.price - b.price
-        );
-
-      case "price-high":
-        return productsCopy.sort(
-          (a, b) => b.price - a.price
-        );
-
-      case "rating-high":
-        return productsCopy.sort(
-          (a, b) => b.rating - a.rating
-        );
-
-      case "name-asc":
-        return productsCopy.sort((a, b) =>
-          a.title.localeCompare(b.title)
-        );
-
-      case "name-desc":
-        return productsCopy.sort((a, b) =>
-          b.title.localeCompare(a.title)
-        );
-
-      default:
-        return productsCopy;
-    }
-  }, [
-    priceFilteredProducts,
-    sortBy,
-  ]);
-
-  /*
-   * Reset pagination when filters change.
-   */
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [
-    debouncedSearchTerm,
-    selectedCategory,
-    sortBy,
-    minPrice,
-    maxPrice,
-  ]);
+    router.replace(
+      queryString
+        ? `${pathname}?${queryString}`
+        : pathname,
+      {
+        scroll: false,
+      }
+    );
+  };
 
   /*
    * Search handler.
+   *
+   * Search is stored in the URL immediately,
+   * while the API remains protected by the
+   * existing debounce.
    */
   const handleSearchChange = (
     value: string
   ) => {
     setSearchTerm(value);
-    setCurrentPage(1);
 
-    if (value.trim()) {
-      setSelectedCategory("all");
-    }
+    const trimmedValue = value.trim();
+
+    updateUrl({
+      search: trimmedValue || null,
+      category: trimmedValue
+        ? null
+        : selectedCategory !== "all"
+          ? selectedCategory
+          : null,
+      page: null,
+    });
   };
 
   /*
@@ -248,12 +303,20 @@ export default function ProductsPageClient() {
   const handleCategoryChange = (
     value: string
   ) => {
-    setSelectedCategory(value);
-    setCurrentPage(1);
+    const normalizedCategory =
+      value === "all" ? null : value;
 
-    if (value !== "all") {
-      setSearchTerm("");
-    }
+    setSearchTerm(
+      normalizedCategory ? "" : searchTerm
+    );
+
+    updateUrl({
+      category: normalizedCategory,
+      search: normalizedCategory
+        ? null
+        : searchTerm.trim() || null,
+      page: null,
+    });
   };
 
   /*
@@ -262,7 +325,47 @@ export default function ProductsPageClient() {
   const handleSortChange = (
     value: string
   ) => {
-    setSortBy(value as SortOption);
+    if (!isValidSortOption(value)) {
+      return;
+    }
+
+    setSortBy(value);
+
+    updateUrl({
+      sort:
+        value === "default"
+          ? null
+          : value,
+      page: null,
+    });
+  };
+
+  /*
+   * Minimum price handler.
+   */
+  const handleMinPriceChange = (
+    value: number | null
+  ) => {
+    setMinPrice(value);
+
+    updateUrl({
+      minPrice: value,
+      page: null,
+    });
+  };
+
+  /*
+   * Maximum price handler.
+   */
+  const handleMaxPriceChange = (
+    value: number | null
+  ) => {
+    setMaxPrice(value);
+
+    updateUrl({
+      maxPrice: value,
+      page: null,
+    });
   };
 
   /*
@@ -270,33 +373,104 @@ export default function ProductsPageClient() {
    */
   const handleClearFilters = () => {
     setSearchTerm("");
-    setSelectedCategory("all");
-    setSortBy("default");
     setMinPrice(null);
     setMaxPrice(null);
-    setCurrentPage(1);
+    setSortBy("default");
+
+    router.replace(pathname, {
+      scroll: false,
+    });
   };
 
   /*
    * Pagination handler.
+   *
+   * Page 1 uses the clean canonical path:
+   *
+   * /products
+   *
+   * Other pages use:
+   *
+   * /products?page=2
    */
   const handlePageChange = (
     page: number
   ) => {
+    const totalPages = Math.ceil(
+      (data?.total ?? 0) /
+        PRODUCTS_PER_PAGE
+    );
+
     if (
       page < 1 ||
-      page > totalPages
+      page > totalPages ||
+      page === currentPage
     ) {
       return;
     }
 
-    setCurrentPage(page);
+    updateUrl({
+      page: page === 1 ? null : page,
+    });
 
     window.scrollTo({
       top: 0,
       behavior: "smooth",
     });
   };
+
+  const products =
+    data?.products ?? [];
+
+  const totalProducts =
+    data?.total ?? 0;
+
+  const totalPages = Math.ceil(
+    totalProducts /
+      PRODUCTS_PER_PAGE
+  );
+
+  const pageStart =
+    totalProducts > 0
+      ? (currentPage - 1) *
+          PRODUCTS_PER_PAGE +
+        1
+      : 0;
+
+  const pageEnd =
+    Math.min(
+      (currentPage - 1) *
+        PRODUCTS_PER_PAGE +
+        PRODUCTS_PER_PAGE,
+      totalProducts
+    );
+
+  const isUpdating =
+    isFetching && !isLoading;
+
+  /*
+   * If a URL contains a page number larger
+   * than the available number of pages,
+   * return the user to the last valid page.
+   */
+  useEffect(() => {
+    if (
+      !isLoading &&
+      totalPages > 0 &&
+      currentPage > totalPages
+    ) {
+      updateUrl({
+        page:
+          totalPages === 1
+            ? null
+            : totalPages,
+      });
+    }
+  }, [
+    currentPage,
+    totalPages,
+    isLoading,
+  ]);
 
   return (
     <main className="products-page">
@@ -312,14 +486,17 @@ export default function ProductsPageClient() {
             </h1>
 
             <p className="products-page-description">
-              Discover quality products at great
-              prices. Find everything you need in
-              one place.
+              Discover quality products at
+              great prices. Find everything
+              you need in one place.
             </p>
           </div>
 
           <div className="products-page-count">
-            <PackageSearch size={20} />
+            <PackageSearch
+              size={20}
+              aria-hidden="true"
+            />
 
             <span>
               {totalProducts} products
@@ -334,38 +511,63 @@ export default function ProductsPageClient() {
           minPrice={minPrice}
           maxPrice={maxPrice}
           categories={categories}
-          onSearchChange={handleSearchChange}
-          onCategoryChange={handleCategoryChange}
-          onSortChange={handleSortChange}
-          onMinPriceChange={setMinPrice}
-          onMaxPriceChange={setMaxPrice}
-          onClearFilters={handleClearFilters}
+          onSearchChange={
+            handleSearchChange
+          }
+          onCategoryChange={
+            handleCategoryChange
+          }
+          onSortChange={
+            handleSortChange
+          }
+          onMinPriceChange={
+            handleMinPriceChange
+          }
+          onMaxPriceChange={
+            handleMaxPriceChange
+          }
+          onClearFilters={
+            handleClearFilters
+          }
         />
 
         {!isPriceRangeValid && (
-          <p className="price-filter-error">
-            Minimum price cannot be greater than
-            maximum price.
+          <p
+            className="price-filter-error"
+            role="alert"
+          >
+            Minimum price cannot be greater
+            than maximum price.
           </p>
         )}
 
         {isCategoriesLoading && (
-          <p className="categories-loading-text">
+          <p
+            className="categories-loading-text"
+            aria-live="polite"
+          >
             Loading categories...
           </p>
         )}
 
         {isError && (
-          <section className="products-state error-state">
-            <AlertCircle size={42} />
+          <section
+            className="products-state error-state"
+            role="alert"
+          >
+            <AlertCircle
+              size={42}
+              aria-hidden="true"
+            />
 
             <h2>
               Unable to load products
             </h2>
 
             <p>
-              Something went wrong while loading
-              the products. Please try again.
+              Something went wrong while
+              loading the products. Please
+              try again.
             </p>
 
             <button
@@ -373,31 +575,45 @@ export default function ProductsPageClient() {
               className="state-action-button"
               onClick={() => refetch()}
             >
-              <RefreshCw size={17} />
+              <RefreshCw
+                size={17}
+                aria-hidden="true"
+              />
+
               Try Again
             </button>
           </section>
         )}
 
         {!isError &&
+          isPriceRangeValid &&
           !isLoading &&
-          sortedProducts.length === 0 && (
-            <section className="products-state empty-state">
-              <PackageSearch size={48} />
+          products.length === 0 && (
+            <section
+              className="products-state empty-state"
+              aria-live="polite"
+            >
+              <PackageSearch
+                size={48}
+                aria-hidden="true"
+              />
 
               <h2>
                 No products found
               </h2>
 
               <p>
-                Try another search term or change
-                your filters to find more products.
+                Try another search term or
+                change your filters to find
+                more products.
               </p>
 
               <button
                 type="button"
                 className="state-action-button"
-                onClick={handleClearFilters}
+                onClick={
+                  handleClearFilters
+                }
               >
                 Clear Filters
               </button>
@@ -405,20 +621,18 @@ export default function ProductsPageClient() {
           )}
 
         {!isError &&
-          sortedProducts.length > 0 && (
+          isPriceRangeValid &&
+          products.length > 0 && (
             <>
               <div className="products-result-toolbar">
                 <p>
                   Showing{" "}
                   <strong>
-                    {skip + 1}
+                    {pageStart}
                   </strong>{" "}
                   -{" "}
                   <strong>
-                    {Math.min(
-                      skip + PRODUCTS_PER_PAGE,
-                      totalProducts
-                    )}
+                    {pageEnd}
                   </strong>{" "}
                   of{" "}
                   <strong>
@@ -428,8 +642,11 @@ export default function ProductsPageClient() {
                 </p>
 
                 {(isSearchPending ||
-                  (isFetching && !isLoading)) && (
-                  <span className="products-fetching-text">
+                  isUpdating) && (
+                  <span
+                    className="products-fetching-text"
+                    aria-live="polite"
+                  >
                     {isSearchPending
                       ? "Searching..."
                       : "Updating products..."}
@@ -438,7 +655,7 @@ export default function ProductsPageClient() {
               </div>
 
               <ProductGrid
-                products={sortedProducts}
+                products={products}
                 isLoading={isLoading}
                 isFetching={isFetching}
               />
@@ -446,7 +663,9 @@ export default function ProductsPageClient() {
               <ProductPagination
                 currentPage={currentPage}
                 totalPages={totalPages}
-                onPageChange={handlePageChange}
+                onPageChange={
+                  handlePageChange
+                }
               />
             </>
           )}
@@ -454,3 +673,5 @@ export default function ProductsPageClient() {
     </main>
   );
 }
+
+

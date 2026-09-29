@@ -1,67 +1,91 @@
+
 "use client";
 
-import { useEffect, useState } from "react";
-import { useAppDispatch, useAppSelector } from "@/app/store/hooks";
-import {
-  CartItem,
-  setCartItems,
-} from "@/app/store/slices/cartSlice";
+import { useEffect, useRef } from "react";
 
-const CART_STORAGE_KEY = "shopcart-items";
+import { getCart } from "@/services/cartService";
+import { useAppDispatch, useAppSelector } from "@/app/store/hooks";
+import { setCartItems, clearCart } from "@/app/store/slices/cartSlice";
 
 export default function CartPersistence() {
   const dispatch = useAppDispatch();
 
-  const cartItems = useAppSelector(
-    (state) => state.cart.items
+  const token = useAppSelector(
+    (state) => state.auth.token
   );
 
-  const [isHydrated, setIsHydrated] = useState(false);
+  const isAuthenticated = useAppSelector(
+    (state) => state.auth.isAuthenticated
+  );
 
-  // Load cart from localStorage
+  const isInitialized = useAppSelector(
+    (state) => state.auth.isInitialized
+  );
+
+  const hasLoadedCart = useRef(false);
+
   useEffect(() => {
-    try {
-      const storedCart = localStorage.getItem(
-        CART_STORAGE_KEY
-      );
+    if (
+      !isInitialized ||
+      !isAuthenticated ||
+      !token
+    ) {
+      return;
+    }
 
-      console.log("Stored cart:", storedCart);
+    if (hasLoadedCart.current) {
+      return;
+    }
 
-      if (storedCart) {
-        const parsedCart: CartItem[] = JSON.parse(storedCart);
+    let isMounted = true;
 
-        if (Array.isArray(parsedCart)) {
-          dispatch(setCartItems(parsedCart));
+    const loadCart = async () => {
+      try {
+        const response = await getCart(token);
+
+        if (!isMounted) {
+          return;
         }
+
+        dispatch(
+          setCartItems(
+            response.cart.items
+          )
+        );
+
+        hasLoadedCart.current = true;
+      } catch (error) {
+        if (!isMounted) {
+          return;
+        }
+
+        console.error(
+          "Failed to load cart from server:",
+          error
+        );
       }
-    } catch (error) {
-      console.error(
-        "Error loading cart from localStorage:",
-        error
-      );
-    } finally {
-      setIsHydrated(true);
-    }
-  }, [dispatch]);
+    };
 
-  // Save cart only after localStorage loading is completed
-  useEffect(() => {
-    if (!isHydrated) return;
+    loadCart();
 
-    try {
-      localStorage.setItem(
-        CART_STORAGE_KEY,
-        JSON.stringify(cartItems)
-      );
+    return () => {
+      isMounted = false;
+    };
+  }, [
+    dispatch,
+    isAuthenticated,
+    isInitialized,
+    token,
+  ]);
 
-      console.log("Saved cart:", cartItems);
-    } catch (error) {
-      console.error(
-        "Error saving cart to localStorage:",
-        error
-      );
-    }
-  }, [cartItems, isHydrated]);
+ useEffect(() => {
+  if (!isAuthenticated) {
+    hasLoadedCart.current = false;
+    dispatch(clearCart());
+  }
+}, [dispatch, isAuthenticated]);
 
   return null;
 }
+
+

@@ -1,43 +1,14 @@
 import { apiRequest } from "@/lib/api";
 
-export interface CartItem {
-  product: {
-    _id: string;
-    title: string;
-    price: number;
-    thumbnail: string;
-    stock: number;
-    discountPercentage: number;
-  };
-  quantity: number;
-  price: number;
-}
+import type {
+  CartResponse,
+  AddToCartData,
+  UpdateCartData,
+} from "@/app/types/cart";
 
-export interface Cart {
-  _id: string;
-  user: string;
-  items: CartItem[];
-  totalAmount: number;
-  createdAt?: string;
-  updatedAt?: string;
-}
-
-export interface CartResponse {
-  success: boolean;
-  cart: Cart;
-  message?: string;
-}
-
-export interface AddToCartData {
-  productId: string;
-  quantity: number;
-}
-
-export interface UpdateCartData {
-  quantity: number;
-}
-
-export const getCart = async (token: string): Promise<CartResponse> => {
+export const getCart = async (
+  token: string
+): Promise<CartResponse> => {
   return apiRequest<CartResponse>("/cart", {
     method: "GET",
     headers: {

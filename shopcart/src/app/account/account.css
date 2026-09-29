@@ -1,0 +1,139 @@
+.account-page {
+  min-height: calc(100vh - 170px);
+  padding: 48px 20px 72px;
+  background: #f8fafc;
+}
+
+.account-container {
+  width: min(100%, 1180px);
+  margin: 0 auto;
+}
+
+.account-page-header {
+  margin-bottom: 32px;
+}
+
+.account-eyebrow {
+  margin: 0 0 6px;
+  color: #2563eb;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.account-page-header h1 {
+  margin: 0;
+  color: #111827;
+  font-size: clamp(28px, 4vw, 38px);
+  line-height: 1.15;
+  letter-spacing: -0.8px;
+}
+
+.account-page-header > p:last-child {
+  max-width: 650px;
+  margin: 10px 0 0;
+  color: #6b7280;
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+.account-card-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.account-option-card {
+  min-height: 150px;
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 22px;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background: #ffffff;
+  color: #111827;
+  text-decoration: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+  transition:
+    transform 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.account-option-card:hover {
+  transform: translateY(-2px);
+  border-color: #bfdbfe;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.07);
+}
+
+.account-option-icon {
+  width: 46px;
+  height: 46px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  border-radius: 10px;
+  background: #eff6ff;
+  color: #2563eb;
+}
+
+.account-option-content {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  min-width: 0;
+}
+
+.account-option-content strong {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.account-option-content span {
+  color: #6b7280;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.account-option-card:focus-visible {
+  outline: 3px solid rgba(37, 99, 235, 0.35);
+  outline-offset: 3px;
+}
+
+@media (max-width: 900px) {
+  .account-card-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 600px) {
+  .account-page {
+    padding: 32px 16px 52px;
+  }
+
+  .account-page-header {
+    margin-bottom: 24px;
+  }
+
+  .account-card-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .account-option-card {
+    min-height: auto;
+    padding: 18px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .account-option-card {
+    transition: none;
+  }
+
+  .account-option-card:hover {
+    transform: none;
+  }
+}

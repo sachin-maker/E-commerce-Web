@@ -1,7 +1,8 @@
+
 "use client";
 
 import Link from "next/link";
-
+import { useEffect } from "react";
 import {
   ChevronRight,
   Home,
@@ -9,10 +10,15 @@ import {
 
 import {
   useGetProductByIdQuery,
-} from "@/app/store/api/dummyJsonApi";
+} from "@/app/store/api/productApi";
 
-import { useDispatch } from "react-redux";
-import { addRecentlyViewed } from "@/app/store/slices/recentlyViewedSlice";
+import {
+  useAppDispatch,
+} from "@/app/store/hooks";
+
+import {
+  addRecentlyViewed,
+} from "@/app/store/slices/recentlyViewedSlice";
 
 import ProductDetailsError from "@/app/components/product-details/ProductDetailsError";
 import ProductDetailsSkeleton from "@/app/components/product-details/ProductDetailsSkeleton";
@@ -22,30 +28,30 @@ import RelatedProducts from "@/app/components/product-details/RelatedProducts";
 import ProductReviews from "@/app/components/product-details/ProductReviews";
 import RecentlyViewed from "@/app/components/product-details/RecentlyViewed";
 import RecommendedProducts from "@/app/components/product-details/RecommendedProducts";
-import { useEffect } from "react";
 
 interface ProductDetailsClientProps {
   productId: string;
 }
 
-
 export default function ProductDetailsClient({
   productId,
 }: ProductDetailsClientProps) {
-   const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
 
   const {
     data: product,
     isLoading,
     isError,
     refetch,
- } = useGetProductByIdQuery(productId);
+  } = useGetProductByIdQuery(productId);
 
-   useEffect(() => {
-    if (product) {
-      dispatch(addRecentlyViewed(product));
+  useEffect(() => {
+    if (!product) {
+      return;
     }
-  }, [dispatch, product]);
+
+    dispatch(addRecentlyViewed(product));
+  }, [dispatch, product?._id]);
 
   if (isLoading) {
     return <ProductDetailsSkeleton />;
@@ -54,11 +60,10 @@ export default function ProductDetailsClient({
   if (isError || !product) {
     return (
       <ProductDetailsError
-        onRetry={() => refetch()}
+        onRetry={refetch}
       />
     );
   }
-  
 
   return (
     <main className="product-details-page">
@@ -68,33 +73,53 @@ export default function ProductDetailsClient({
           aria-label="Breadcrumb"
         >
           <Link href="/">
-            <Home size={15} />
-            Home
+            <Home
+              size={15}
+              aria-hidden="true"
+            />
+            <span>Home</span>
           </Link>
 
-          <ChevronRight size={15} />
+          <ChevronRight
+            size={15}
+            aria-hidden="true"
+          />
 
           <Link href="/products">
             Products
           </Link>
 
-          <ChevronRight size={15} />
+          <ChevronRight
+            size={15}
+            aria-hidden="true"
+          />
 
-          <span>{product.title}</span>
+          <span aria-current="page">
+            {product.title}
+          </span>
         </nav>
 
-        <section className="product-details-layout">
+        <section
+          className="product-details-layout"
+          aria-label="Product details"
+        >
           <ProductImageGallery product={product} />
 
           <ProductInformation product={product} />
         </section>
 
-        <section className="product-description-section">
+        <section
+          className="product-description-section"
+          aria-labelledby="product-information-title"
+        >
           <span className="section-eyebrow">
             Product Information
           </span>
 
-          <h2 className="product-description-title">
+          <h2
+            id="product-information-title"
+            className="product-description-title"
+          >
             About this product
           </h2>
 
@@ -141,15 +166,22 @@ export default function ProductDetailsClient({
             )}
           </div>
         </section>
+
         <ProductReviews
           reviews={product.reviews}
           rating={product.rating}
         />
 
         <RelatedProducts product={product} />
+
         <RecommendedProducts product={product} />
-        <RecentlyViewed currentProductId={product._id}/>
+
+        <RecentlyViewed
+          currentProductId={product._id}
+        />
       </div>
     </main>
   );
 }
+
+

@@ -1,0 +1,90 @@
+.page {
+  display: grid;
+  place-items: center;
+  min-height: 70vh;
+  padding: 40px 16px;
+}
+
+.card {
+  width: min(100%, 430px);
+  padding: 28px;
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+}
+
+.title {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 28px;
+  line-height: 1.2;
+}
+
+.description {
+  margin: 8px 0 24px;
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.form {
+  display: grid;
+  gap: 16px;
+}
+
+.field {
+  display: grid;
+  gap: 6px;
+}
+
+.field label {
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.input {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  color: var(--text-primary);
+  background: var(--white);
+  border: 1px solid var(--border-dark);
+  border-radius: 8px;
+}
+
+.input:focus {
+  border-color: var(--primary);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.14);
+}
+
+.submitButton {
+  min-height: 44px;
+  color: var(--white);
+  background: var(--primary);
+  border: 1px solid var(--primary);
+  border-radius: 8px;
+  font-weight: 700;
+}
+
+.submitButton:hover:not(:disabled) {
+  background: var(--primary-dark);
+}
+
+.submitButton:disabled {
+  opacity: 0.6;
+}
+
+.footerText {
+  margin: 24px 0 0;
+  color: var(--text-secondary);
+  font-size: 14px;
+  text-align: center;
+}
+
+.link {
+  color: var(--primary);
+  font-weight: 700;
+  text-decoration: underline;
+}

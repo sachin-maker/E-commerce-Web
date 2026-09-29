@@ -7,17 +7,24 @@ const orderItemSchema = new mongoose.Schema(
       ref: "Product",
       required: true,
     },
+
     title: {
       type: String,
       required: true,
+      trim: true,
     },
+
     thumbnail: {
       type: String,
+      trim: true,
     },
+
     price: {
       type: Number,
       required: true,
+      min: 0,
     },
+
     quantity: {
       type: Number,
       required: true,
@@ -38,6 +45,10 @@ const orderSchema = new mongoose.Schema(
     items: {
       type: [orderItemSchema],
       required: true,
+      validate: {
+        validator: (items) => Array.isArray(items) && items.length > 0,
+        message: "Order must contain at least one item",
+      },
     },
 
     totalAmount: {
@@ -50,26 +61,37 @@ const orderSchema = new mongoose.Schema(
       fullName: {
         type: String,
         required: true,
+        trim: true,
       },
+
       phone: {
         type: String,
         required: true,
+        trim: true,
       },
+
       addressLine: {
         type: String,
         required: true,
+        trim: true,
       },
+
       city: {
         type: String,
         required: true,
+        trim: true,
       },
+
       state: {
         type: String,
         required: true,
+        trim: true,
       },
+
       postalCode: {
         type: String,
         required: true,
+        trim: true,
       },
     },
 

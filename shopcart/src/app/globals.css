@@ -634,7 +634,7 @@ main {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 220px;
+  height: 220px;
   padding: 18px;
   background: var(--background);
 }
@@ -642,25 +642,17 @@ main {
 .product-card-image-link {
   display: block;
   width: 100%;
+  height: 100%;
 }
 
 .product-card-image {
   display: block;
   width: 100%;
-  height: 160px;
+  height: 100%;
   object-fit: contain;
   mix-blend-mode: multiply;
   transition: transform 0.25s ease;
 }
-
-.product-main-image {
-  display: block;
-  width: 100%;
-  height: 420px;
-  object-fit: contain;
-  mix-blend-mode: multiply;
-}
-
 
 .product-card:hover .product-card-image {
   transform: scale(1.04);
@@ -696,6 +688,13 @@ main {
 .product-wishlist-button:hover {
   color: var(--danger);
   background: #fef2f2;
+}
+
+.product-wishlist-button:focus-visible,
+.product-card-action:focus-visible,
+.product-card-title:focus-visible {
+  outline: 3px solid var(--primary);
+  outline-offset: 3px;
 }
 
 .product-card-content {
@@ -867,6 +866,30 @@ main {
 }
 
 /* =========================================
+   RESPONSIVE PRODUCT GRID
+========================================= */
+
+@media (max-width: 1200px) {
+  .products-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 900px) {
+  .products-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 560px) {
+  .products-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+}
+
+
+/* =========================================
    EMPTY AND ERROR STATES
 ========================================= */
 
@@ -941,6 +964,8 @@ main {
   gap: 10px;
   margin-top: 42px;
 }
+
+
 
 .pagination-page-list {
   display: flex;
@@ -2190,4 +2215,45 @@ textarea:focus-visible {
 
 .state-action-button.secondary:hover {
   background-color: #f3f4f6;
+}
+
+.search-suggestion:focus-visible {
+  outline: 3px solid rgba(37, 99, 235, 0.35);
+  outline-offset: -3px;
+}
+
+.product-filter-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.product-filter-error {
+  margin: 6px 0 0;
+  color: #dc2626;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.pagination-ellipsis {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 36px;
+  height: 36px;
+  color: #6b7280;
+  user-select: none;
+}
+
+.protected-route-loading {
+  min-height: 300px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.protected-route-loading p {
+  margin: 0;
+  color: #64748b;
+  font-size: 14px;
 }

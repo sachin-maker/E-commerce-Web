@@ -1,28 +1,56 @@
 "use client";
 
-import React from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import ProductCard from "@/app/components/home/ProductCard";
 import { useAppDispatch, useAppSelector } from "@/app/store/hooks";
 import { clearWishlist } from "@/app/store/slices/wishlistSlice";
 import styles from "./Wishlist.module.css";
 
-const WishlistPage = () => {
+export default function WishlistPage() {
   const dispatch = useAppDispatch();
 
   const wishlistItems = useAppSelector(
     (state) => state.wishlist.items
   );
 
+  const [isHydrated, setIsHydrated] = useState(false);
+
+  useEffect(() => {
+    setIsHydrated(true);
+  }, []);
+
+  if (!isHydrated) {
+    return (
+      <main className={styles.page}>
+        <section
+          className={styles.loadingState}
+          aria-label="Loading wishlist"
+        >
+          <p>Loading wishlist...</p>
+        </section>
+      </main>
+    );
+  }
+
   if (wishlistItems.length === 0) {
     return (
       <main className={styles.page}>
-        <div className={styles.emptyState}>
+        <section
+          className={styles.emptyState}
+          aria-labelledby="empty-wishlist-title"
+        >
           <div className={styles.emptyContent}>
-            <h1 className={styles.emptyTitle}>My Wishlist</h1>
+            <h1
+              id="empty-wishlist-title"
+              className={styles.emptyTitle}
+            >
+              My Wishlist
+            </h1>
 
             <p className={styles.emptyText}>
-              You haven’t added any products to your wishlist yet.
+              You haven&apos;t added any products to your
+              wishlist yet.
             </p>
 
             <Link
@@ -32,7 +60,7 @@ const WishlistPage = () => {
               Browse Products
             </Link>
           </div>
-        </div>
+        </section>
       </main>
     );
   }
@@ -40,11 +68,14 @@ const WishlistPage = () => {
   return (
     <main className={styles.page}>
       <div className={styles.container}>
-        <div className={styles.header}>
+        <header className={styles.header}>
           <div>
             <h1 className={styles.title}>My Wishlist</h1>
 
-            <p className={styles.subtitle}>
+            <p
+              className={styles.subtitle}
+              aria-live="polite"
+            >
               {wishlistItems.length}{" "}
               {wishlistItems.length === 1
                 ? "product"
@@ -57,22 +88,34 @@ const WishlistPage = () => {
             type="button"
             className={styles.clearButton}
             onClick={() => dispatch(clearWishlist())}
+            aria-label={`Clear all ${wishlistItems.length} wishlist ${
+              wishlistItems.length === 1
+                ? "product"
+                : "products"
+            }`}
           >
             Clear Wishlist
           </button>
-        </div>
+        </header>
 
-        <div className={styles.productsGrid}>
-          {wishlistItems.map((product) => (
-            <ProductCard
-              key={product._id}
-              product={product}
-            />
-          ))}
-        </div>
+        <section aria-labelledby="wishlist-products-title">
+          <h2
+            id="wishlist-products-title"
+            className={styles.visuallyHidden}
+          >
+            Wishlist Products
+          </h2>
+
+          <div className={styles.productsGrid}>
+            {wishlistItems.map((product) => (
+              <ProductCard
+                key={product._id}
+                product={product}
+              />
+            ))}
+          </div>
+        </section>
       </div>
     </main>
   );
-};
-
-export default WishlistPage;
+}

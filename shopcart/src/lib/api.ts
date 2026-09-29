@@ -1,9 +1,12 @@
-// src/lib/api.ts
-
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 if (!API_URL) {
   throw new Error("NEXT_PUBLIC_API_URL is not defined");
+}
+
+interface ApiErrorResponse {
+  success?: boolean;
+  message?: string;
 }
 
 export const apiRequest = async <T>(
@@ -19,11 +22,24 @@ export const apiRequest = async <T>(
   });
 
   if (!response.ok) {
-    const errorText = await response.text();
+    let message = `API request failed with status ${response.status}`;
 
-    throw new Error(
-      errorText || `API request failed with status ${response.status}`
-    );
+    try {
+      const data =
+        (await response.json()) as ApiErrorResponse;
+
+      if (
+        typeof data.message === "string" &&
+        data.message.trim()
+      ) {
+        message = data.message;
+      }
+    } catch {
+      // Response was not valid JSON.
+      // Keep the default HTTP error message.
+    }
+
+    throw new Error(message);
   }
 
   return response.json() as Promise<T>;

@@ -1,4 +1,3 @@
-
 import Link from "next/link";
 import {
   ArrowRight,
@@ -10,8 +9,18 @@ import "./PromotionalBanners.css";
 
 export default function PromotionalBanners() {
   return (
-    <section className="promotions-section">
+    <section
+      className="promotions-section"
+      aria-labelledby="promotions-title"
+    >
       <div className="home-container">
+        <h2
+          id="promotions-title"
+          className="sr-only"
+        >
+          ShopCart Offers
+        </h2>
+
         <div className="promotions-grid">
           <div className="promotion-card promotion-blue">
             <div className="promotion-content">
@@ -26,22 +35,36 @@ export default function PromotionalBanners() {
               </h3>
 
               <p>
-                On selected products. Shop now and
-                save more.
+                Save more on selected products
+                while the offer lasts.
               </p>
 
               <Link
-                href="/products?sort=deals"
+                href="/products"
                 className="promotion-button"
+                aria-label="Shop products with current deals"
               >
                 Shop Deals
-                <ArrowRight size={16} />
+
+                <ArrowRight
+                  size={16}
+                  aria-hidden="true"
+                />
               </Link>
             </div>
 
-            <div className="promotion-visual">
-              <Gift size={100} strokeWidth={1} />
-              <span className="promotion-sparkle">✦</span>
+            <div
+              className="promotion-visual"
+              aria-hidden="true"
+            >
+              <Gift
+                size={100}
+                strokeWidth={1}
+              />
+
+              <span className="promotion-sparkle">
+                ✦
+              </span>
             </div>
           </div>
 
@@ -58,22 +81,36 @@ export default function PromotionalBanners() {
               </h3>
 
               <p>
-                Get your favorites delivered right
-                to your doorstep.
+                Get your favorite products delivered
+                right to your doorstep.
               </p>
 
               <Link
                 href="/products"
                 className="promotion-button"
+                aria-label="Start shopping at ShopCart"
               >
                 Start Shopping
-                <ArrowRight size={16} />
+
+                <ArrowRight
+                  size={16}
+                  aria-hidden="true"
+                />
               </Link>
             </div>
 
-            <div className="promotion-visual">
-              <Truck size={100} strokeWidth={1} />
-              <span className="promotion-sparkle">✦</span>
+            <div
+              className="promotion-visual"
+              aria-hidden="true"
+            >
+              <Truck
+                size={100}
+                strokeWidth={1}
+              />
+
+              <span className="promotion-sparkle">
+                ✦
+              </span>
             </div>
           </div>
         </div>

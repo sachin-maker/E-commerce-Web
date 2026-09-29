@@ -1,109 +1,18 @@
-
-"use client";
-
 import Link from "next/link";
-import Image from "next/image";
-import {
-  ArrowRight,
-  Heart,
-  ShoppingCart,
-  Star,
-} from "lucide-react";
-
-
+import { ArrowRight } from "lucide-react";
 
 import "./FeaturedProducts.css";
-import { Product } from "@/app/types/product";
-import { useGetFeaturedProductsQuery } from "@/app/store/api/dummyJsonApi";
 
-function ProductCard({
-  product,
-}: {
-  product: Product;
-}) {
-  const discountPrice =
-    product.price *
-    (1 - product.discountPercentage / 100);
-
-  return (
-    <article className="product-card">
-      <div className="product-image-wrapper">
-        <Link href={`/products/${product._id}`}>
-          <Image
-            src={product.thumbnail}
-            alt={product.title}
-            width={300}
-            height={240}
-            className="product-image"
-          />
-        </Link>
-
-        <span className="product-discount">
-          -{Math.round(product.discountPercentage)}%
-        </span>
-
-        <button
-          type="button"
-          className="product-wishlist"
-          aria-label={`Add ${product.title} to wishlist`}
-        >
-          <Heart size={18} />
-        </button>
-      </div>
-
-      <div className="product-info">
-        <span className="product-category">
-          {product.category}
-        </span>
-
-        <Link
-          href={`/products/${product._id}`}
-          className="product-title"
-        >
-          {product.title}
-        </Link>
-
-        <div className="product-rating">
-          <Star
-            size={14}
-            fill="#f59e0b"
-            color="#f59e0b"
-          />
-
-          <span>{product.rating.toFixed(1)}</span>
-
-          <span className="product-review-count">
-            ({product.reviews?.length ?? 0} reviews)
-          </span>
-        </div>
-
-        <div className="product-bottom">
-          <div className="product-prices">
-            <strong>
-              ₹{discountPrice.toFixed(2)}
-            </strong>
-
-            <del>
-              ₹{product.price.toFixed(2)}
-            </del>
-          </div>
-
-          <Link
-            href={`/products/${product._id}`}
-            className="product-add-button"
-            aria-label={`View ${product.title}`}
-          >
-            <ShoppingCart size={17} />
-          </Link>
-        </div>
-      </div>
-    </article>
-  );
-}
+import ProductCard from "@/app/components/home/ProductCard";
+import { getFeaturedProducts } from "@/lib/server/products";
+import type { Product } from "@/app/types/product";
 
 function ProductSkeleton() {
   return (
-    <div className="product-card product-skeleton">
+    <div
+      className="product-card product-skeleton"
+      aria-hidden="true"
+    >
       <div className="skeleton-image" />
 
       <div className="skeleton-content">
@@ -115,16 +24,23 @@ function ProductSkeleton() {
   );
 }
 
-export default function FeaturedProducts() {
-  const {
-    data,
-    isLoading,
-    isError,
-    refetch,
-  } = useGetFeaturedProductsQuery();
+export default async function FeaturedProducts() {
+  let products: Product[] = [];
+
+  try {
+    products = await getFeaturedProducts();
+  } catch (error) {
+    console.error(
+      "Failed to load featured products:",
+      error
+    );
+  }
 
   return (
-    <section className="featured-section">
+    <section
+      className="featured-section"
+      aria-labelledby="featured-products-title"
+    >
       <div className="home-container">
         <div className="section-heading">
           <div>
@@ -132,48 +48,55 @@ export default function FeaturedProducts() {
               Handpicked for you
             </span>
 
-            <h2>Featured Products</h2>
+            <h2 id="featured-products-title">
+              Featured Products
+            </h2>
 
             <p>
-              Discover our most popular products.
+              Explore popular products selected from
+              the ShopCart collection.
             </p>
           </div>
 
           <Link
             href="/products"
             className="section-view-all"
+            aria-label="View all products"
           >
             View All Products
-            <ArrowRight size={17} />
+
+            <ArrowRight
+              size={17}
+              aria-hidden="true"
+            />
           </Link>
         </div>
 
-        {isLoading && (
-          <div className="products-grid">
-            {Array.from({ length: 8 }).map((_, index) => (
-              <ProductSkeleton key={index} />
-            ))}
-          </div>
-        )}
-
-        {isError && (
-          <div className="products-error">
+        {products.length === 0 ? (
+          <div
+            className="products-empty"
+            role="status"
+          >
             <p>
-              Unable to load products. Please try again.
+              Featured products are temporarily
+              unavailable.
             </p>
 
-            <button
-              type="button"
-              onClick={() => refetch()}
+            <Link
+              href="/products"
+              className="section-view-all"
             >
-              Retry
-            </button>
-          </div>
-        )}
+              Browse Products
 
-        {!isLoading && !isError && (
+              <ArrowRight
+                size={17}
+                aria-hidden="true"
+              />
+            </Link>
+          </div>
+        ) : (
           <div className="products-grid">
-            {data?.products.map((product) => (
+            {products.map((product) => (
               <ProductCard
                 key={product._id}
                 product={product}

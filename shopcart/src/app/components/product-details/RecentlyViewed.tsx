@@ -1,35 +1,46 @@
+
 "use client";
 
-import { useSelector } from "react-redux";
-import type { RootState } from "@/app/store/index";
 import ProductGrid from "@/app/components/products/ProductGrid";
+import { useAppSelector } from "@/app/store/hooks";
 
 interface RecentlyViewedProps {
-  currentProductId: number;
+  currentProductId: string;
 }
 
 export default function RecentlyViewed({
   currentProductId,
 }: RecentlyViewedProps) {
-  const products = useSelector(
-    (state: RootState) =>
-      state.recentlyViewed.products.filter(
-        (product) => product._id !== currentProductId
-      )
-  );
+  const recentlyViewedProducts =
+    useAppSelector(
+      (state) =>
+        state.recentlyViewed.products
+    );
+
+  const products =
+    recentlyViewedProducts.filter(
+      (product) =>
+        product._id !== currentProductId
+    );
 
   if (products.length === 0) {
     return null;
   }
 
   return (
-    <section className="recently-viewed-section">
+    <section
+      className="recently-viewed-section"
+      aria-labelledby="recently-viewed-title"
+    >
       <div className="recently-viewed-header">
         <span className="section-eyebrow">
           Your Activity
         </span>
 
-        <h2 className="recently-viewed-title">
+        <h2
+          id="recently-viewed-title"
+          className="recently-viewed-title"
+        >
           Recently Viewed
         </h2>
 
@@ -46,3 +57,5 @@ export default function RecentlyViewed({
     </section>
   );
 }
+
+

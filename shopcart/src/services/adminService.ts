@@ -1,18 +1,23 @@
 import { apiRequest } from "@/lib/api";
-import type { Order, OrderResponse } from "./orderService";
-import type { Product, ProductResponse } from "./productService";
 
-export interface Dashboard {
+import type {
+  Order,
+  OrderResponse,
+} from "./orderService";
+
+type Dashboard = {
   totalUsers: number;
   totalProducts: number;
-  activeProducts: number;
   totalOrders: number;
-  totalRevenue: number;
-}
+  totalRevenue?: number;
+  revenue?: number;
+  activeProducts: number;
+};
 
 export interface DashboardResponse {
   success: boolean;
   stats: Dashboard;
+  dashboard: Dashboard;
 }
 
 export interface UsersResponse {
@@ -26,38 +31,18 @@ export interface UsersResponse {
   }>;
 }
 
-export interface CreateProductData {
-  title: string;
-  description: string;
-  price: number;
-  discountPercentage?: number;
-  stock: number;
-  brand?: string;
-  category: string;
-  thumbnail: string;
-  images?: string[];
-}
-
-export type UpdateProductData = Partial<CreateProductData>;
-
-export interface AdminProductResponse {
-  success: boolean;
-  message?: string;
-  product: Product;
-}
-
 export interface AdminOrdersResponse {
   success: boolean;
   orders: Order[];
 }
 
 export interface UpdateOrderStatusData {
-  orderStatus:
-    | "PLACED"
-    | "CONFIRMED"
-    | "SHIPPED"
-    | "DELIVERED"
-    | "CANCELLED";
+  status:
+    | "placed"
+    | "processing"
+    | "shipped"
+    | "delivered"
+    | "cancelled";
 }
 
 export const getDashboard = async (
@@ -69,8 +54,6 @@ export const getDashboard = async (
     },
   });
 };
-
-
 
 export const getAllUsers = async (
   token: string
@@ -103,51 +86,9 @@ export const updateOrderStatus = async (
       method: "PATCH",
       headers: {
         Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
       },
       body: JSON.stringify(statusData),
     }
   );
 };
-
-export const createProduct = async (
-  token: string,
-  productData: CreateProductData
-): Promise<AdminProductResponse> => {
-  return apiRequest<AdminProductResponse>("/admin/products", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify(productData),
-  });
-};
-
-export const updateProduct = async (
-  token: string,
-  productId: string,
-  productData: UpdateProductData
-): Promise<AdminProductResponse> => {
-  return apiRequest<AdminProductResponse>(`/admin/products/${productId}`, {
-    method: "PATCH",
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify(productData),
-  });
-};
-
-export const deleteProduct = async (
-  token: string,
-  productId: string
-): Promise<{ success: boolean; message: string }> => {
-  return apiRequest<{ success: boolean; message: string }>(
-    `/admin/products/${productId}`,
-    {
-      method: "DELETE",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    }
-  );
-};
-

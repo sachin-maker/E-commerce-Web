@@ -1,4 +1,3 @@
-
 import Link from "next/link";
 import {
   ArrowRight,
@@ -75,7 +74,10 @@ const categories = [
 
 export default function CategoriesSection() {
   return (
-    <section className="categories-section">
+    <section
+      className="categories-section"
+      aria-labelledby="categories-title"
+    >
       <div className="home-container">
         <div className="section-heading">
           <div>
@@ -83,20 +85,27 @@ export default function CategoriesSection() {
               Explore collections
             </span>
 
-            <h2>Shop by Category</h2>
+            <h2 id="categories-title">
+              Shop by Category
+            </h2>
 
             <p>
-              Find everything you need, organized
-              just for you.
+              Browse popular product categories and
+              find what you need at ShopCart.
             </p>
           </div>
 
           <Link
             href="/products"
             className="section-view-all"
+            aria-label="View all products"
           >
             View All
-            <ArrowRight size={17} />
+
+            <ArrowRight
+              size={17}
+              aria-hidden="true"
+            />
           </Link>
         </div>
 
@@ -107,20 +116,30 @@ export default function CategoriesSection() {
             return (
               <Link
                 key={category.slug}
-                href={`/products/category/${category.slug}`}
+                href={`/categories/${encodeURIComponent(
+                  category.slug
+                )}`}
                 className="category-card"
+                aria-label={`Shop ${category.name}`}
               >
                 <div
                   className={`category-icon ${category.color}`}
+                  aria-hidden="true"
                 >
-                  <Icon size={27} strokeWidth={1.8} />
+                  <Icon
+                    size={27}
+                    strokeWidth={1.8}
+                  />
                 </div>
 
                 <h3>{category.name}</h3>
 
                 <p>{category.description}</p>
 
-                <span className="category-arrow">
+                <span
+                  className="category-arrow"
+                  aria-hidden="true"
+                >
                   <ArrowRight size={16} />
                 </span>
               </Link>

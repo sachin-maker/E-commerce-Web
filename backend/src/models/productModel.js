@@ -1,6 +1,5 @@
 const mongoose = require("mongoose");
 
-
 const productSchema = new mongoose.Schema(
   {
     title: {
@@ -40,6 +39,10 @@ const productSchema = new mongoose.Schema(
       required: true,
       min: 0,
       default: 0,
+      validate: {
+        validator: Number.isInteger,
+        message: "Stock must be a whole number",
+      },
     },
 
     brand: {
@@ -57,6 +60,7 @@ const productSchema = new mongoose.Schema(
     thumbnail: {
       type: String,
       required: true,
+      trim: true,
     },
 
     images: {
@@ -75,7 +79,6 @@ const productSchema = new mongoose.Schema(
   }
 );
 
-// Search index
 productSchema.index({
   title: "text",
   description: "text",

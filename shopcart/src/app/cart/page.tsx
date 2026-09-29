@@ -1,27 +1,231 @@
+
 "use client";
 
-import Link from "next/link";
 import Image from "next/image";
+import Link from "next/link";
+import { useState } from "react";
+
 import { useAppDispatch, useAppSelector } from "@/app/store/hooks";
 import {
-  increaseQuantity,
-  decreaseQuantity,
-  removeFromCart,
-  clearCart
+  clearCart as clearCartState,
+  setCartItems,
 } from "@/app/store/slices/cartSlice";
-
+import {
+  clearCart,
+  removeCartItem,
+  updateCartItem,
+} from "@/services/cartService";
 
 import "./Cart.css";
+
+const formatCurrency = (amount: number) =>
+  `₹${amount.toFixed(2)}`;
+
+const getOriginalPrice = (
+  price: number,
+  discountPercentage: number
+) => {
+  if (
+    discountPercentage <= 0 ||
+    discountPercentage >= 100
+  ) {
+    return price;
+  }
+
+  return price / (1 - discountPercentage / 100);
+};
 
 export default function CartPage() {
   const dispatch = useAppDispatch();
 
-  const cartItems = useAppSelector((state) => state.cart.items);
-
-  const subtotal = cartItems.reduce(
-    (total, item) => total + item.product.price * item.quantity,
-    0
+  const token = useAppSelector(
+    (state) => state.auth.token
   );
+
+  const isAuthenticated = useAppSelector(
+    (state) => state.auth.isAuthenticated
+  );
+
+  const cartItems = useAppSelector(
+    (state) => state.cart.items
+  );
+
+  const [loadingProductId, setLoadingProductId] =
+    useState<string | null>(null);
+
+  const [isClearing, setIsClearing] =
+    useState(false);
+
+  const [error, setError] = useState("");
+
+  const {
+    subtotal,
+    totalItems,
+    totalSavings,
+  } = cartItems.reduce(
+    (summary, item) => {
+      const {
+        price,
+        discountPercentage,
+      } = item.product;
+
+      const originalPrice =
+        getOriginalPrice(
+          price,
+          discountPercentage
+        );
+
+      summary.subtotal +=
+        price * item.quantity;
+
+      summary.totalItems += item.quantity;
+
+      summary.totalSavings +=
+        Math.max(
+          originalPrice - price,
+          0
+        ) * item.quantity;
+
+      return summary;
+    },
+    {
+      subtotal: 0,
+      totalItems: 0,
+      totalSavings: 0,
+    }
+  );
+
+  const handleUpdateQuantity = async (
+    productId: string,
+    quantity: number
+  ) => {
+    if (!token || !isAuthenticated) {
+      return;
+    }
+
+    if (quantity < 1) {
+      return;
+    }
+
+    try {
+      setLoadingProductId(productId);
+      setError("");
+
+      const response =
+        await updateCartItem(
+          token,
+          productId,
+          { quantity }
+        );
+
+      dispatch(
+        setCartItems(
+          response.cart.items
+        )
+      );
+    } catch (err) {
+      console.error(
+        "Failed to update cart item:",
+        err
+      );
+
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Unable to update cart."
+      );
+    } finally {
+      setLoadingProductId(null);
+    }
+  };
+
+  const handleRemoveItem = async (
+    productId: string
+  ) => {
+    if (!token || !isAuthenticated) {
+      return;
+    }
+
+    try {
+      setLoadingProductId(productId);
+      setError("");
+
+      const response =
+        await removeCartItem(
+          token,
+          productId
+        );
+
+      dispatch(
+        setCartItems(
+          response.cart.items
+        )
+      );
+    } catch (err) {
+      console.error(
+        "Failed to remove cart item:",
+        err
+      );
+
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Unable to remove item from cart."
+      );
+    } finally {
+      setLoadingProductId(null);
+    }
+  };
+
+  const handleClearCart = async () => {
+    if (!token || !isAuthenticated) {
+      return;
+    }
+
+    const confirmed =
+      window.confirm(
+        "Are you sure you want to clear your cart?"
+      );
+
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      setIsClearing(true);
+      setError("");
+
+      const response =
+        await clearCart(token);
+
+      dispatch(
+        setCartItems(
+          response.cart.items
+        )
+      );
+
+      // Keep Redux explicitly synchronized
+      // with the server response.
+      if (
+        response.cart.items.length === 0
+      ) {
+        dispatch(clearCartState());
+      }
+    } catch (err) {
+      console.error(
+        "Failed to clear cart:",
+        err
+      );
+
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Unable to clear cart."
+      );
+    } finally {
+      setIsClearing(false);
+    }
+  };
 
   if (cartItems.length === 0) {
     return (
@@ -30,140 +234,260 @@ export default function CartPage() {
           <h1>Your Cart is Empty</h1>
 
           <p>
-            You have not added any products to your cart yet.
+            You have not added any products
+            to your cart yet.
           </p>
 
-          <Link href="/products" className="continue-shopping-btn">
+          <Link
+            href="/products"
+            className="continue-shopping-btn"
+          >
             Continue Shopping
           </Link>
         </div>
       </main>
     );
   }
-  const totalSavings = cartItems.reduce((total, item) => {
-    const originalPrice =
-      item.product.price /
-      (1 - item.product.discountPercentage / 100);
-
-    const savingsPerItem = originalPrice - item.product.price;
-
-    return total + savingsPerItem * item.quantity;
-  }, 0);
 
   return (
-    <main className="cart-page">
+    <main
+      className="cart-page"
+      aria-labelledby="cart-title"
+    >
       <div className="cart-container">
-        <h1 className="cart-title">Shopping Cart</h1>
-        <button
-          className="clear-cart-btn"
-          onClick={() => dispatch(clearCart())}
-        >
-          Clear Cart
-        </button>
+        <div className="cart-header">
+          <h1
+            id="cart-title"
+            className="cart-title"
+          >
+            Shopping Cart
+          </h1>
+
+          <button
+            type="button"
+            className="clear-cart-btn"
+            onClick={handleClearCart}
+            disabled={isClearing}
+            aria-busy={isClearing}
+          >
+            {isClearing
+              ? "Clearing..."
+              : "Clear Cart"}
+          </button>
+        </div>
+
+        {error && (
+          <div
+            className="cart-error"
+            role="alert"
+          >
+            {error}
+          </div>
+        )}
 
         <div className="cart-layout">
-          <section className="cart-items">
-            {cartItems.map((item) => (
-              <div
-                className="cart-item"
-                key={item.product._id}
-              >
-                <div className="cart-product-image">
-                  <Image
-                    src={item.product.thumbnail}
-                    alt={item.product.title}
-                    width={120}
-                    height={120}
-                  />
-                </div>
+          <section
+            className="cart-items"
+            aria-label="Cart items"
+          >
+            {cartItems.map((item) => {
+              const product =
+                item.product;
 
-                <div className="cart-product-details">
-                  <h2>{item.product.title}</h2>
+              const originalPrice =
+                getOriginalPrice(
+                  product.price,
+                  product.discountPercentage
+                );
 
-                  <div className="cart-price-details">
-                    <span className="original-price">
-                      $
-                      {(
-                        item.product.price /
-                        (1 - item.product.discountPercentage / 100)
-                      ).toFixed(2)}
-                    </span>
+              const itemTotal =
+                product.price *
+                item.quantity;
 
-                    <span className="discount-percentage">
-                      {item.product.discountPercentage}% OFF
-                    </span>
+              const isAtStockLimit =
+                item.quantity >=
+                product.stock;
 
-                    <p className="cart-product-price">
-                      ${item.product.price.toFixed(2)}
-                    </p>
+              const isUpdating =
+                loadingProductId ===
+                product._id;
+
+              return (
+                <article
+                  className="cart-item"
+                  key={product._id}
+                >
+                  <div className="cart-product-image">
+                    <Link
+                      href={`/products/${product._id}`}
+                      aria-label={`View ${product.title}`}
+                    >
+                      <Image
+                        src={
+                          product.thumbnail
+                        }
+                        alt={product.title}
+                        width={120}
+                        height={120}
+                      />
+                    </Link>
                   </div>
 
-                  <div className="quantity-controls">
-                    <button
-                      onClick={() =>
-                        dispatch(decreaseQuantity(item.product._id))
-                      }
-                      disabled={item.quantity === 1}
-                    >
-                      -
-                    </button>
+                  <div className="cart-product-details">
+                    <h2>
+                      {product.title}
+                    </h2>
 
-                    <span>{item.quantity}</span>
+                    <div className="cart-price-details">
+                      {product.discountPercentage >
+                        0 && (
+                        <span className="original-price">
+                          {formatCurrency(
+                            originalPrice
+                          )}
+                        </span>
+                      )}
 
-                    <button
-                      onClick={() =>
-                        dispatch(increaseQuantity(item.product._id))
-                      }
-                      disabled={item.quantity >= item.product.stock}
-                    >
-                      +
-                    </button>
-                    {item.quantity >= item.product.stock && (
-                      <p className="stock-limit-message">
-                        Maximum available stock reached
+                      {product.discountPercentage >
+                        0 && (
+                        <span className="discount-percentage">
+                          {Math.round(
+                            product.discountPercentage
+                          )}
+                          % OFF
+                        </span>
+                      )}
+
+                      <p className="cart-product-price">
+                        {formatCurrency(
+                          product.price
+                        )}
                       </p>
+                    </div>
+
+                    <div
+                      className="quantity-controls"
+                      role="group"
+                      aria-label={`Quantity controls for ${product.title}`}
+                    >
+                      <button
+                        type="button"
+                        onClick={() =>
+                          handleUpdateQuantity(
+                            product._id,
+                            item.quantity - 1
+                          )
+                        }
+                        disabled={
+                          item.quantity <= 1 ||
+                          isUpdating ||
+                          isClearing
+                        }
+                        aria-label={`Decrease quantity of ${product.title}`}
+                      >
+                        −
+                      </button>
+
+                      <span
+                        aria-live="polite"
+                        aria-label={`Quantity ${item.quantity}`}
+                      >
+                        {isUpdating
+                          ? "..."
+                          : item.quantity}
+                      </span>
+
+                      <button
+                        type="button"
+                        onClick={() =>
+                          handleUpdateQuantity(
+                            product._id,
+                            item.quantity + 1
+                          )
+                        }
+                        disabled={
+                          isAtStockLimit ||
+                          isUpdating ||
+                          isClearing
+                        }
+                        aria-label={`Increase quantity of ${product.title}`}
+                      >
+                        +
+                      </button>
+
+                      {isAtStockLimit && (
+                        <p className="stock-limit-message">
+                          Maximum available
+                          stock reached
+                        </p>
+                      )}
+                    </div>
+
+                    <button
+                      type="button"
+                      className="remove-btn"
+                      onClick={() =>
+                        handleRemoveItem(
+                          product._id
+                        )
+                      }
+                      disabled={
+                        isUpdating ||
+                        isClearing
+                      }
+                      aria-busy={isUpdating}
+                      aria-label={`Remove ${product.title} from cart`}
+                    >
+                      {isUpdating
+                        ? "Removing..."
+                        : "Remove"}
+                    </button>
+                  </div>
+
+                  <div
+                    className="cart-item-total"
+                    aria-label={`Total for ${product.title}`}
+                  >
+                    {formatCurrency(
+                      itemTotal
                     )}
                   </div>
-
-                  <button
-                    className="remove-btn"
-                    onClick={() =>
-                      dispatch(removeFromCart(item.product._id))
-                    }
-                  >
-                    Remove
-                  </button>
-                </div>
-
-                <div className="cart-item-total">
-                  $
-                  {(item.product.price * item.quantity).toFixed(2)}
-                </div>
-              </div>
-            ))}
+                </article>
+              );
+            })}
           </section>
 
-          <aside className="cart-summary">
-            <h2>Order Summary</h2>
+          <aside
+            className="cart-summary"
+            aria-labelledby="order-summary-title"
+          >
+            <h2 id="order-summary-title">
+              Order Summary
+            </h2>
 
             <div className="summary-row">
               <span>Items</span>
               <span>
-                {cartItems.reduce(
-                  (total, item) => total + item.quantity,
-                  0
-                )}
+                {totalItems}
               </span>
             </div>
 
             <div className="summary-row">
               <span>Subtotal</span>
-              <span>${subtotal.toFixed(2)}</span>
+              <span>
+                {formatCurrency(
+                  subtotal
+                )}
+              </span>
             </div>
 
             <div className="summary-row savings-row">
               <span>You Save</span>
-              <span>${totalSavings.toFixed(2)}</span>
+              <span>
+                {formatCurrency(
+                  totalSavings
+                )}
+              </span>
             </div>
 
             <div className="summary-row">
@@ -175,7 +499,12 @@ export default function CartPage() {
 
             <div className="summary-total">
               <span>Total</span>
-              <strong>${subtotal.toFixed(2)}</strong>
+
+              <strong>
+                {formatCurrency(
+                  subtotal
+                )}
+              </strong>
             </div>
 
             <Link
@@ -190,3 +519,5 @@ export default function CartPage() {
     </main>
   );
 }
+
+

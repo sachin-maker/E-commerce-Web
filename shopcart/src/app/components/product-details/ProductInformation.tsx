@@ -1,11 +1,9 @@
+
 "use client";
 
-import { useAppDispatch, useAppSelector } from "@/app/store/hooks";
 import Link from "next/link";
-import {
-  addToWishlist,
-  removeFromWishlist,
-} from "@/app/store/slices/wishlistSlice";
+import { useEffect, useState } from "react";
+import toast from "react-hot-toast";
 import {
   CheckCircle2,
   Heart,
@@ -14,13 +12,24 @@ import {
   Star,
   Truck,
 } from "lucide-react";
-import { useState } from "react";
-import toast from "react-hot-toast";
+
+import {
+  useAppDispatch,
+  useAppSelector,
+} from "@/app/store/hooks";
+
+import { setCartItems } from "@/app/store/slices/cartSlice";
+
+import {
+  addToWishlist,
+  removeFromWishlist,
+} from "@/app/store/slices/wishlistSlice";
+
+import { addToCart } from "@/services/cartService";
 
 import type { Product } from "@/app/types/product";
 
 import ProductQuantitySelector from "@/app/components/product-details/ProductQuantitySelector";
-import { addToCart } from "@/app/store/slices/cartSlice";
 
 interface ProductInformationProps {
   product: Product;
@@ -30,22 +39,30 @@ export default function ProductInformation({
   product,
 }: ProductInformationProps) {
   const [quantity, setQuantity] = useState(1);
+  const [isAddingToCart, setIsAddingToCart] =
+    useState(false);
+
   const dispatch = useAppDispatch();
 
-  const wishlistItems = useAppSelector(
-    (state) => state.wishlist.items
+  const token = useAppSelector(
+    (state) => state.auth.token
   );
 
-  const isWishlisted = wishlistItems.some(
-    (item) => item._id === product._id
+  const isAuthenticated = useAppSelector(
+    (state) => state.auth.isAuthenticated
   );
 
-  const cartItems = useAppSelector(
-    (state) => state.cart.items
+  const isWishlisted = useAppSelector((state) =>
+    state.wishlist.items.some(
+      (item) => item._id === product._id
+    )
   );
 
-  const isInCart = cartItems.some(
-    (item) => item.product._id === product._id
+  const isInCart = useAppSelector((state) =>
+    state.cart.items.some(
+      (item) =>
+        item.product._id === product._id
+    )
   );
 
   const discountedPrice =
@@ -54,11 +71,121 @@ export default function ProductInformation({
 
   const isOutOfStock = product.stock <= 0;
 
-  const handleAddToCart = () => {
-    console.log("Adding product to cart:", product);
+  useEffect(() => {
+    if (product.stock <= 0) {
+      setQuantity(1);
+      return;
+    }
 
-    dispatch(addToCart(product));
-    toast.success(`${product.title} added to cart`);
+    setQuantity((currentQuantity) =>
+      Math.min(
+        Math.max(currentQuantity, 1),
+        product.stock
+      )
+    );
+  }, [product._id, product.stock]);
+
+  const handleAddToCart = async () => {
+    if (isAddingToCart) {
+      return;
+    }
+
+    if (isOutOfStock) {
+      toast.error("This product is out of stock");
+      return;
+    }
+
+    if (!isAuthenticated || !token) {
+      toast.error(
+        "Please sign in to add products to your cart"
+      );
+      return;
+    }
+
+    if (
+      !Number.isInteger(quantity) ||
+      quantity < 1 ||
+      quantity > product.stock
+    ) {
+      toast.error(
+        `Please select a quantity between 1 and ${product.stock}`
+      );
+      return;
+    }
+
+    setIsAddingToCart(true);
+
+    try {
+      const response = await addToCart(token, {
+        productId: product._id,
+        quantity,
+      });
+
+      /*
+       * Backend is the source of truth.
+       * Synchronize Redux with the cart returned
+       * from MongoDB.
+       */
+      dispatch(
+        setCartItems(response.cart.items)
+      );
+
+      toast.success(
+        quantity === 1
+          ? `${product.title} added to cart`
+          : `${quantity} × ${product.title} added to cart`
+      );
+    } catch (error) {
+      console.error(
+        "Add to cart error:",
+        error
+      );
+
+      let message =
+        "Failed to add product to cart";
+
+      if (error instanceof Error) {
+        try {
+          const parsedError = JSON.parse(
+            error.message
+          );
+
+          if (
+            parsedError &&
+            typeof parsedError.message ===
+              "string"
+          ) {
+            message = parsedError.message;
+          } else {
+            message = error.message;
+          }
+        } catch {
+          message = error.message;
+        }
+      }
+
+      toast.error(message);
+    } finally {
+      setIsAddingToCart(false);
+    }
+  };
+
+  const handleWishlistToggle = () => {
+    if (isWishlisted) {
+      dispatch(
+        removeFromWishlist(product._id)
+      );
+
+      toast.success(
+        `${product.title} removed from wishlist`
+      );
+    } else {
+      dispatch(addToWishlist(product));
+
+      toast.success(
+        `${product.title} added to wishlist`
+      );
+    }
   };
 
   return (
@@ -72,10 +199,16 @@ export default function ProductInformation({
       </h1>
 
       <div className="product-details-rating-row">
-        <div className="product-details-rating">
+        <div
+          className="product-details-rating"
+          aria-label={`Product rating ${product.rating.toFixed(
+            1
+          )} out of 5`}
+        >
           <Star
             size={18}
             fill="currentColor"
+            aria-hidden="true"
           />
 
           <strong>
@@ -83,7 +216,10 @@ export default function ProductInformation({
           </strong>
         </div>
 
-        <span className="rating-separator">
+        <span
+          className="rating-separator"
+          aria-hidden="true"
+        >
           |
         </span>
 
@@ -117,14 +253,21 @@ export default function ProductInformation({
         )}
       </div>
 
-      <div className="product-stock-status">
+      <div
+        className="product-stock-status"
+        aria-live="polite"
+      >
         {isOutOfStock ? (
           <span className="out-of-stock">
             Out of stock
           </span>
         ) : (
           <>
-            <CheckCircle2 size={17} />
+            <CheckCircle2
+              size={17}
+              aria-hidden="true"
+            />
+
             <span>
               In stock — {product.stock} available
             </span>
@@ -154,7 +297,7 @@ export default function ProductInformation({
 
           <ProductQuantitySelector
             quantity={quantity}
-            maxQuantity={Math.max(product.stock, 1)}
+            maxQuantity={product.stock}
             onQuantityChange={setQuantity}
           />
         </div>
@@ -165,41 +308,57 @@ export default function ProductInformation({
               href="/cart"
               className="add-to-cart-button"
             >
-              <ShoppingCart size={19} />
+              <ShoppingCart
+                size={19}
+                aria-hidden="true"
+              />
               Go to Cart
             </Link>
           ) : (
             <button
               type="button"
               className="add-to-cart-button"
-              disabled={isOutOfStock}
+              disabled={
+                isOutOfStock ||
+                isAddingToCart
+              }
               onClick={handleAddToCart}
+              aria-busy={isAddingToCart}
             >
-              <ShoppingCart size={19} />
-              Add to Cart
+              <ShoppingCart
+                size={19}
+                aria-hidden="true"
+              />
+
+              {isOutOfStock
+                ? "Out of Stock"
+                : isAddingToCart
+                  ? "Adding..."
+                  : "Add to Cart"}
             </button>
           )}
 
           <button
             type="button"
-            className={`product-details-wishlist ${isWishlisted ? "active" : ""
-              }`}
-            onClick={() => {
-              if (isWishlisted) {
-                dispatch(removeFromWishlist(product._id));
-              } else {
-                dispatch(addToWishlist(product));
-              }
-            }}
+            className={`product-details-wishlist ${
+              isWishlisted ? "active" : ""
+            }`}
+            onClick={handleWishlistToggle}
             aria-label={
               isWishlisted
-                ? "Remove product from wishlist"
-                : "Add product to wishlist"
+                ? `Remove ${product.title} from wishlist`
+                : `Add ${product.title} to wishlist`
             }
+            aria-pressed={isWishlisted}
           >
             <Heart
               size={21}
-              fill={isWishlisted ? "currentColor" : "none"}
+              fill={
+                isWishlisted
+                  ? "currentColor"
+                  : "none"
+              }
+              aria-hidden="true"
             />
           </button>
         </div>
@@ -207,10 +366,14 @@ export default function ProductInformation({
 
       <div className="product-service-benefits">
         <div className="product-service-item">
-          <Truck size={22} />
+          <Truck
+            size={22}
+            aria-hidden="true"
+          />
 
           <div>
             <strong>Free Shipping</strong>
+
             <span>
               Free delivery on eligible orders
             </span>
@@ -218,10 +381,14 @@ export default function ProductInformation({
         </div>
 
         <div className="product-service-item">
-          <ShieldCheck size={22} />
+          <ShieldCheck
+            size={22}
+            aria-hidden="true"
+          />
 
           <div>
             <strong>Secure Payment</strong>
+
             <span>
               Safe and secure checkout
             </span>
@@ -231,3 +398,5 @@ export default function ProductInformation({
     </div>
   );
 }
+
+

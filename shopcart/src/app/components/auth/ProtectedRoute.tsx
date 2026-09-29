@@ -14,19 +14,20 @@ export default function ProtectedRoute({
 }: ProtectedRouteProps) {
   const router = useRouter();
 
-  const { isAuthenticated } = useAppSelector(
+  const { isAuthenticated, isInitialized } = useAppSelector(
     (state) => state.auth
   );
 
   useEffect(() => {
-    if (!isAuthenticated) {
-      router.replace("/login");
+    if (isInitialized && !isAuthenticated) {
+      const returnPath = `${window.location.pathname}${window.location.search}`;
+      router.replace(`/login?next=${encodeURIComponent(returnPath)}`);
     }
-  }, [isAuthenticated, router]);
+  }, [isAuthenticated, isInitialized, router]);
 
-  if (!isAuthenticated) {
+  if (!isInitialized || !isAuthenticated) {
     return (
-      <div className="flex min-h-[300px] items-center justify-center">
+      <div className="protected-route-loading">
         <p>Checking authentication...</p>
       </div>
     );
@@ -34,3 +35,4 @@ export default function ProtectedRoute({
 
   return <>{children}</>;
 }
+

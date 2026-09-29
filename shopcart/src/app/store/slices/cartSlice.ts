@@ -1,10 +1,17 @@
-import { createSlice, PayloadAction } from "@reduxjs/toolkit";
-import { Product } from "@/app/types/product";
 
-export interface CartItem {
-  product: Product;
-  quantity: number;
-}
+import {
+  createSlice,
+  type PayloadAction,
+} from "@reduxjs/toolkit";
+
+import {
+  type CartProduct,
+  type CartItem,
+} from "@/app/types/cart";
+
+
+
+
 
 interface CartState {
   items: CartItem[];
@@ -14,55 +21,126 @@ const initialState: CartState = {
   items: [],
 };
 
+const clampQuantity = (
+  quantity: number,
+  stock: number
+): number => {
+  if (stock < 1) {
+    return 0;
+  }
+
+  return Math.min(
+    Math.max(quantity, 1),
+    stock
+  );
+};
+
 const cartSlice = createSlice({
   name: "cart",
   initialState,
 
   reducers: {
-    addToCart: (state, action: PayloadAction<Product>) => {
+    addToCart: (
+      state,
+      action: PayloadAction<{
+        product: CartProduct;
+        quantity?: number;
+      }>
+    ) => {
+      const {
+        product,
+        quantity = 1,
+      } = action.payload;
+
+      if (product.stock < 1) {
+        return;
+      }
+
       const existingItem = state.items.find(
-        (item) => item.product._id === action.payload.id
+        (item) =>
+          item.product._id === product._id
       );
 
       if (existingItem) {
-        existingItem.quantity += 1;
-      } else {
+        const nextQuantity = clampQuantity(
+          existingItem.quantity + quantity,
+          product.stock
+        );
+
+        if (nextQuantity > 0) {
+          existingItem.quantity = nextQuantity;
+        }
+
+        return;
+      }
+
+      const nextQuantity = clampQuantity(
+        quantity,
+        product.stock
+      );
+
+      if (nextQuantity > 0) {
         state.items.push({
-          product: action.payload,
-          quantity: 1,
+          product,
+          quantity: nextQuantity,
         });
       }
     },
 
-    increaseQuantity: (state, action: PayloadAction<number>) => {
+    increaseQuantity: (
+      state,
+      action: PayloadAction<string>
+    ) => {
       const item = state.items.find(
-        (item) => item.product._id === action.payload
+        (cartItem) =>
+          cartItem.product._id === action.payload
       );
 
-      if (item && item.quantity < item.product.stock) {
-        item.quantity += 1;
+      if (!item) {
+        return;
       }
+
+      if (
+        item.product.stock < 1 ||
+        item.quantity >= item.product.stock
+      ) {
+        return;
+      }
+
+      item.quantity += 1;
     },
 
-    decreaseQuantity: (state, action: PayloadAction<number>) => {
+    decreaseQuantity: (
+      state,
+      action: PayloadAction<string>
+    ) => {
       const item = state.items.find(
-        (item) => item.product._id === action.payload
+        (cartItem) =>
+          cartItem.product._id === action.payload
       );
 
-      if (!item) return;
+      if (!item) {
+        return;
+      }
 
       if (item.quantity > 1) {
         item.quantity -= 1;
-      } else {
-        state.items = state.items.filter(
-          (cartItem) => cartItem.product._id !== action.payload
-        );
+        return;
       }
+
+      state.items = state.items.filter(
+        (cartItem) =>
+          cartItem.product._id !== action.payload
+      );
     },
 
-    removeFromCart: (state, action: PayloadAction<number>) => {
+    removeFromCart: (
+      state,
+      action: PayloadAction<string>
+    ) => {
       state.items = state.items.filter(
-        (item) => item.product._id !== action.payload
+        (item) =>
+          item.product._id !== action.payload
       );
     },
 
@@ -74,7 +152,12 @@ const cartSlice = createSlice({
       state,
       action: PayloadAction<CartItem[]>
     ) => {
-      state.items = action.payload;
+      state.items = action.payload.filter(
+        (item) =>
+          item.product &&
+          item.product._id &&
+          item.quantity >= 1
+      );
     },
   },
 });
@@ -89,3 +172,5 @@ export const {
 } = cartSlice.actions;
 
 export default cartSlice.reducer;
+
+

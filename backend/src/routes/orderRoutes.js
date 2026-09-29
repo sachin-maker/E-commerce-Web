@@ -1,10 +1,13 @@
+
 const express = require("express");
-const { protect, adminOnly } = require("../middleware/authMiddleware");
+
+const { protect } = require("../middleware/authMiddleware");
 
 const {
   createOrder,
   getMyOrders,
   getOrderById,
+  cancelOrder,
 } = require("../controllers/orderController");
 
 const router = express.Router();
@@ -12,7 +15,12 @@ const router = express.Router();
 router.use(protect);
 
 router.post("/", createOrder);
+
 router.get("/", getMyOrders);
+
 router.get("/:id", getOrderById);
 
+router.patch("/:id/cancel", cancelOrder);
+
 module.exports = router;
+

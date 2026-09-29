@@ -1,23 +1,22 @@
 import { configureStore } from "@reduxjs/toolkit";
-import { dummyJsonApi } from "./api/dummyJsonApi";
+
+import { baseApi } from "./api/baseApi";
+import authReducer from "./slices/authSlice";
 import cartReducer from "./slices/cartSlice";
-import ordersReducer from "./slices/ordersSlice";
 import wishlistReducer from "./slices/wishlistSlice";
 import recentlyViewedReducer from "./slices/recentlyViewedSlice";
-import authReducer from "./slices/authSlice";
 
 export const store = configureStore({
   reducer: {
-    [dummyJsonApi.reducerPath]: dummyJsonApi.reducer,
+    [baseApi.reducerPath]: baseApi.reducer,
     auth: authReducer,
     cart: cartReducer,
-    orders: ordersReducer,
     wishlist: wishlistReducer,
     recentlyViewed: recentlyViewedReducer,
   },
 
   middleware: (getDefaultMiddleware) =>
-    getDefaultMiddleware().concat(dummyJsonApi.middleware),
+    getDefaultMiddleware().concat(baseApi.middleware),
 });
 
 export type RootState = ReturnType<typeof store.getState>;

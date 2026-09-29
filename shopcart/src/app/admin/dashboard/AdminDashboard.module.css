@@ -1,0 +1,435 @@
+.page {
+  min-height: 100vh;
+  padding: 42px 24px 72px;
+  background: #f5f7fb;
+}
+
+.container {
+  width: min(1180px, 100%);
+  margin: 0 auto;
+}
+
+.header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 30px;
+}
+
+.eyebrow {
+  margin: 0 0 7px;
+  color: #2563eb;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.header h1 {
+  margin: 0;
+  color: #172033;
+  font-size: clamp(28px, 4vw, 38px);
+  letter-spacing: -0.04em;
+  line-height: 1.15;
+}
+
+.header p:not(.eyebrow) {
+  margin: 10px 0 0;
+  color: #667085;
+  line-height: 1.5;
+}
+
+.primaryAction,
+.actions a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: #fff;
+  background: #2563eb;
+  border-radius: 9px;
+  font-weight: 700;
+  text-decoration: none;
+  transition:
+    background-color 0.2s ease,
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.primaryAction {
+  min-height: 44px;
+  padding: 0 16px;
+  white-space: nowrap;
+}
+
+.primaryAction:hover {
+  background: #1d4ed8;
+  transform: translateY(-1px);
+}
+
+.primaryAction:active {
+  transform: translateY(0);
+}
+
+.metrics {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+
+.metric,
+.panel,
+.actions,
+.alerts,
+.state {
+  background: #fff;
+  border: 1px solid #e6eaf0;
+  border-radius: 14px;
+  box-shadow: 0 5px 16px rgb(15 23 42 / 4%);
+}
+
+.metric {
+  min-width: 0;
+  padding: 20px;
+}
+
+.metricIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 9px;
+  color: #2563eb;
+  background: #eff6ff;
+  border-radius: 9px;
+}
+
+.metric p {
+  margin: 16px 0 4px;
+  color: #667085;
+  font-size: 14px;
+}
+
+.metric strong {
+  display: block;
+  overflow-wrap: anywhere;
+  color: #172033;
+  font-size: 26px;
+  line-height: 1.2;
+}
+
+.metric small {
+  display: block;
+  margin-top: 6px;
+  color: #98a2b3;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.alerts {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 15px 18px;
+  margin: 20px 0;
+  color: #92400e;
+  background: #fffbeb;
+  border-color: #fde68a;
+}
+
+.alerts div,
+.alerts a {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.alerts div {
+  min-width: 0;
+}
+
+.alerts a {
+  color: #92400e;
+  font-size: 14px;
+  font-weight: 700;
+  white-space: nowrap;
+  text-decoration: none;
+}
+
+.alerts a:hover {
+  text-decoration: underline;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 1.2fr 0.8fr;
+  gap: 20px;
+}
+
+.panel {
+  overflow: hidden;
+}
+
+.panelHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 20px;
+  border-bottom: 1px solid #edf0f4;
+}
+
+.panelHeader h2,
+.actions h2 {
+  margin: 0;
+  color: #172033;
+  font-size: 18px;
+  line-height: 1.3;
+}
+
+.panelHeader p {
+  margin: 4px 0 0;
+  color: #98a2b3;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.panelHeader a {
+  flex-shrink: 0;
+  color: #2563eb;
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.panelHeader a:hover {
+  text-decoration: underline;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 15px 20px;
+  border-bottom: 1px solid #f0f2f5;
+  text-decoration: none;
+  transition: background-color 0.2s ease;
+}
+
+.row:last-child {
+  border-bottom: 0;
+}
+
+a.row:hover {
+  background: #f8fafc;
+}
+
+.row span {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+}
+
+.row strong {
+  overflow: hidden;
+  color: #344054;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.4;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.row small {
+  color: #98a2b3;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.row > :last-child {
+  flex-shrink: 0;
+  text-align: right;
+}
+
+.status,
+.role {
+  color: #2563eb !important;
+  font-weight: 700;
+}
+
+.empty {
+  padding: 24px 20px;
+  margin: 0;
+  color: #98a2b3;
+  font-size: 14px;
+}
+
+.actions {
+  padding: 20px;
+  margin-top: 20px;
+}
+
+.actions div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 15px;
+}
+
+.actions a {
+  min-height: 39px;
+  padding: 0 13px;
+  background: #172033;
+  font-size: 14px;
+}
+
+.actions a:hover {
+  background: #344054;
+  transform: translateY(-1px);
+}
+
+.state {
+  padding: 36px;
+  color: #667085;
+  text-align: center;
+  line-height: 1.5;
+}
+
+.state p {
+  margin: 0;
+}
+
+.state button {
+  margin-left: 8px;
+  padding: 0;
+  color: #2563eb;
+  background: transparent;
+  border: 0;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.state button:hover {
+  text-decoration: underline;
+}
+
+/* Accessibility helper used by dashboard/page.tsx */
+.visuallyHidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Keyboard accessibility */
+.primaryAction:focus-visible,
+.actions a:focus-visible,
+.panelHeader a:focus-visible,
+.alerts a:focus-visible,
+.row:focus-visible,
+.state button:focus-visible {
+  outline: 3px solid rgb(37 99 235 / 35%);
+  outline-offset: 3px;
+}
+
+/* Tablet */
+@media (max-width: 900px) {
+  .metrics {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Mobile */
+@media (max-width: 600px) {
+  .page {
+    padding: 28px 14px 52px;
+  }
+
+  .header {
+    align-items: flex-start;
+    flex-direction: column;
+    margin-bottom: 24px;
+  }
+
+  .primaryAction {
+    width: 100%;
+  }
+
+  .metrics {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .metric {
+    padding: 18px;
+  }
+
+  .alerts {
+    align-items: flex-start;
+    flex-direction: column;
+    padding: 15px;
+  }
+
+  .alerts a {
+    white-space: normal;
+  }
+
+  .panelHeader {
+    padding: 17px 15px;
+  }
+
+  .row {
+    padding: 14px;
+  }
+
+  .row strong {
+    max-width: 180px;
+  }
+
+  .actions {
+    padding: 17px 15px;
+  }
+
+  .actions div {
+    flex-direction: column;
+  }
+
+  .actions a {
+    width: 100%;
+  }
+
+  .state {
+    padding: 28px 18px;
+  }
+}
+
+/* Very small screens */
+@media (max-width: 380px) {
+  .page {
+    padding-inline: 10px;
+  }
+
+  .header h1 {
+    font-size: 26px;
+  }
+
+  .row {
+    align-items: flex-start;
+  }
+
+  .row > :last-child {
+    max-width: 110px;
+  }
+}

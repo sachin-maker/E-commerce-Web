@@ -1,4 +1,3 @@
-
 .promotions-section {
   padding: 0 0 70px;
   background: #f8fafc;
@@ -6,8 +5,20 @@
 
 .promotions-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 20px;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 .promotion-card {
@@ -87,11 +98,22 @@
   font-size: 12px;
   font-weight: 700;
   text-decoration: none;
-  transition: background 0.2s ease;
+  transition:
+    background-color 0.2s ease,
+    transform 0.2s ease;
 }
 
 .promotion-button:hover {
   background: #1d4ed8;
+}
+
+.promotion-button:active {
+  transform: scale(0.98);
+}
+
+.promotion-button:focus-visible {
+  outline: 3px solid #93c5fd;
+  outline-offset: 3px;
 }
 
 .promotion-dark .promotion-button {
@@ -117,6 +139,7 @@
   top: -10px;
   right: -8px;
   font-size: 24px;
+  pointer-events: none;
 }
 
 @media (max-width: 800px) {
@@ -126,9 +149,17 @@
 }
 
 @media (max-width: 480px) {
+  .promotions-section {
+    padding-bottom: 50px;
+  }
+
   .promotion-card {
     min-height: 250px;
     padding: 22px;
+  }
+
+  .promotion-content {
+    max-width: 70%;
   }
 
   .promotion-card h3 {
@@ -139,8 +170,22 @@
     font-size: 25px;
   }
 
+  .promotion-card p {
+    font-size: 11px;
+  }
+
   .promotion-visual svg {
     width: 75px;
     height: 75px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .promotion-button {
+    transition: none;
+  }
+
+  .promotion-button:active {
+    transform: none;
   }
 }

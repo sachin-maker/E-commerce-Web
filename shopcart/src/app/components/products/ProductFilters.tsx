@@ -1,3 +1,4 @@
+
 "use client";
 
 import {
@@ -42,72 +43,162 @@ export default function ProductFilters({
   onClearFilters,
 }: ProductFiltersProps) {
   const hasActiveFilters =
-  searchTerm.trim().length > 0 ||
-  selectedCategory !== "all" ||
-  sortBy !== "default" ||
-  minPrice !== null ||
-  maxPrice !== null;
+    searchTerm.trim().length > 0 ||
+    selectedCategory !== "all" ||
+    sortBy !== "default" ||
+    minPrice !== null ||
+    maxPrice !== null;
+
+  const hasInvalidPriceRange =
+    minPrice !== null &&
+    maxPrice !== null &&
+    minPrice > maxPrice;
+
+  const handleMinPriceChange = (
+    value: string
+  ) => {
+    if (value === "") {
+      onMinPriceChange(null);
+      return;
+    }
+
+    const parsedValue = Number(value);
+
+    if (
+      Number.isFinite(parsedValue) &&
+      parsedValue >= 0
+    ) {
+      onMinPriceChange(parsedValue);
+    }
+  };
+
+  const handleMaxPriceChange = (
+    value: string
+  ) => {
+    if (value === "") {
+      onMaxPriceChange(null);
+      return;
+    }
+
+    const parsedValue = Number(value);
+
+    if (
+      Number.isFinite(parsedValue) &&
+      parsedValue >= 0
+    ) {
+      onMaxPriceChange(parsedValue);
+    }
+  };
 
   return (
-    <section className="product-filters">
+    <section
+      className="product-filters"
+      aria-label="Product filters"
+    >
       <div className="product-search-wrapper">
-        <Search size={19} />
+        <Search
+          size={19}
+          aria-hidden="true"
+        />
+
+        <label
+          htmlFor="product-search"
+          className="sr-only"
+        >
+          Search products
+        </label>
 
         <input
+          id="product-search"
           type="search"
           value={searchTerm}
           onChange={(event) =>
             onSearchChange(event.target.value)
           }
           placeholder="Search products..."
-          aria-label="Search products"
           className="product-search-input"
+          autoComplete="off"
         />
       </div>
 
       <div className="product-filter-controls">
+        {/* Price */}
         <div className="product-filter-group product-price-filter">
-  <label>
-    Price Range
-  </label>
+          <span className="product-filter-label">
+            Price Range
+          </span>
 
-  <div className="price-inputs">
-    <input
-      type="number"
-      min="0"
-      value={minPrice ?? ""}
-      onChange={(event) => {
-        const value = event.target.value;
+          <div className="price-inputs">
+            <label
+              htmlFor="product-min-price"
+              className="sr-only"
+            >
+              Minimum price
+            </label>
 
-        onMinPriceChange(
-          value === "" ? null : Number(value)
-        );
-      }}
-      placeholder="Min"
-      aria-label="Minimum price"
-    />
+            <input
+              id="product-min-price"
+              type="number"
+              min="0"
+              step="0.01"
+              value={minPrice ?? ""}
+              onChange={(event) =>
+                handleMinPriceChange(
+                  event.target.value
+                )
+              }
+              placeholder="Min"
+              aria-label="Minimum price"
+              aria-invalid={hasInvalidPriceRange}
+            />
 
-    <span>-</span>
+            <span aria-hidden="true">-</span>
 
-    <input
-      type="number"
-      min="0"
-      value={maxPrice ?? ""}
-      onChange={(event) => {
-        const value = event.target.value;
+            <label
+              htmlFor="product-max-price"
+              className="sr-only"
+            >
+              Maximum price
+            </label>
 
-        onMaxPriceChange(
-          value === "" ? null : Number(value)
-        );
-      }}
-      placeholder="Max"
-      aria-label="Maximum price"
-    />
-  </div>
-</div>
+            <input
+              id="product-max-price"
+              type="number"
+              min="0"
+              step="0.01"
+              value={maxPrice ?? ""}
+              onChange={(event) =>
+                handleMaxPriceChange(
+                  event.target.value
+                )
+              }
+              placeholder="Max"
+              aria-label="Maximum price"
+              aria-invalid={hasInvalidPriceRange}
+            />
+          </div>
+
+          {hasInvalidPriceRange && (
+            <p
+              className="product-filter-error"
+              role="alert"
+            >
+              Minimum price cannot be greater than
+              maximum price.
+            </p>
+          )}
+        </div>
+
+        {/* Category */}
         <div className="product-filter-group">
-          <label htmlFor="category-filter">
-            <Filter size={16} />
+          <label
+            htmlFor="category-filter"
+            className="product-filter-label"
+          >
+            <Filter
+              size={16}
+              aria-hidden="true"
+            />
             Category
           </label>
 
@@ -115,7 +206,9 @@ export default function ProductFilters({
             id="category-filter"
             value={selectedCategory}
             onChange={(event) =>
-              onCategoryChange(event.target.value)
+              onCategoryChange(
+                event.target.value
+              )
             }
             className="product-filter-select"
           >
@@ -134,9 +227,16 @@ export default function ProductFilters({
           </select>
         </div>
 
+        {/* Sort */}
         <div className="product-filter-group">
-          <label htmlFor="sort-filter">
-            <SlidersHorizontal size={16} />
+          <label
+            htmlFor="sort-filter"
+            className="product-filter-label"
+          >
+            <SlidersHorizontal
+              size={16}
+              aria-hidden="true"
+            />
             Sort By
           </label>
 
@@ -144,7 +244,9 @@ export default function ProductFilters({
             id="sort-filter"
             value={sortBy}
             onChange={(event) =>
-              onSortChange(event.target.value)
+              onSortChange(
+                event.target.value
+              )
             }
             className="product-filter-select"
           >
@@ -174,17 +276,24 @@ export default function ProductFilters({
           </select>
         </div>
 
+        {/* Clear */}
         {hasActiveFilters && (
           <button
             type="button"
             className="clear-product-filters"
             onClick={onClearFilters}
+            aria-label="Clear all product filters"
           >
-            <X size={16} />
-            Clear Filters
+            <X
+              size={16}
+              aria-hidden="true"
+            />
+
+            <span>Clear Filters</span>
           </button>
         )}
       </div>
     </section>
   );
 }
+  

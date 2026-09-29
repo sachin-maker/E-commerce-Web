@@ -1,10 +1,10 @@
+
 "use client";
 
 import { Provider } from "react-redux";
 import { Toaster } from "react-hot-toast";
 import { store } from "@/app/store";
 import CartPersistence from "@/app/components/cart/CartPersistence";
-import OrderPersistence from "@/app/components/orders/OrderPersistence";
 import WishlistPersistence from "@/app/components/wishlist/WishlistPersistence";
 import AuthPersistence from "@/app/components/auth/AuthPersistence";
 
@@ -19,7 +19,6 @@ export default function Providers({
     <Provider store={store}>
       <AuthPersistence />
       <CartPersistence />
-      <OrderPersistence />
       <WishlistPersistence />
 
       {children}
@@ -28,3 +27,5 @@ export default function Providers({
     </Provider>
   );
 }
+
+

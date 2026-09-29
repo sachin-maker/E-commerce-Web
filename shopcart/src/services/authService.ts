@@ -1,5 +1,12 @@
 import { apiRequest } from "@/lib/api";
 
+
+export interface UpdateProfileData {
+  name?: string;
+  email?: string;
+}
+
+
 export interface RegisterData {
   name: string;
   email: string;
@@ -57,4 +64,49 @@ export const getUserProfile = async (
       Authorization: `Bearer ${token}`,
     },
   });
+};
+
+export const updateUserProfile = async (
+  token: string,
+  userData: UpdateProfileData
+): Promise<ProfileResponse & { message: string }> => {
+  return apiRequest<ProfileResponse & { message: string }>(
+    "/users/profile",
+    {
+      method: "PATCH",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(userData),
+    }
+  );
+};
+
+export interface ChangePasswordData {
+  currentPassword: string;
+  newPassword: string;
+  confirmPassword: string;
+}
+
+export interface ChangePasswordResponse {
+  success: boolean;
+  message: string;
+}
+
+export const changeUserPassword = async (
+  token: string,
+  passwordData: ChangePasswordData
+): Promise<ChangePasswordResponse> => {
+  return apiRequest<ChangePasswordResponse>(
+    "/users/profile/password",
+    {
+      method: "PATCH",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(passwordData),
+    }
+  );
 };
